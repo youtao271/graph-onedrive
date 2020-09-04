@@ -1,16 +1,12 @@
 <?php
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
 
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Microsoft\Graph\Graph;
 use Illuminate\Support\Facades\Cache;
-use Microsoft\Graph\Model;
-use League\OAuth2\Client\Provider\GenericProvider;
 use App\Http\Tokens\GraphToken;
+use Microsoft\Graph\Graph;
 
 class AuthController extends Controller
 {
@@ -24,28 +20,30 @@ class AuthController extends Controller
 
   public function login()
   {
+    $accessToken = Cache::get('accessToken');
+    /* if ($accessToken) {
+      if ($accessToken->hasExpired()) {
+        $refreshToken = $accessToken->getRefreshToken();
+        $this->authHandle->refreshAccessToken($refreshToken);
+      }
+      return redirect('/');
+    } */
 
     $authUrl = $this->authHandle->getAuthorizationUrl();
+    var_dump($authUrl);
+    exit;
 
-    // Save client state so we can validate in callback
     Cache::set('oauthState', $this->authHandle->getState());
-    //var_dump(Cache::get('accessToken'));exit;
 
-    // Redirect to AAD signin page
     return redirect()->away($authUrl);
   }
 
   public function callback(Request $request)
   {
-    // Validate state
     $expectedState = Cache::get('oauthState');
-    //$request->session()->forget('oauthState');
     $providedState = $request->query('state');
 
-
     if (!isset($expectedState)) {
-      // If there is no expected state in the session,
-      // do nothing and redirect to the home page.
       return redirect('/');
     }
 
@@ -60,20 +58,10 @@ class AuthController extends Controller
     if (isset($authCode)) {
 
       try {
-
-        $token = $this->authHandle->getAccessToken($authCode);
-
-        $graph = new Graph();
-        $graph->setAccessToken($token);
-
-        $user = $graph->createRequest('GET', '/me')
-          ->setReturnType(Model\User::class)
-          ->execute();
-
+        //获取accessToken并存储在Redis中
+        $this->authHandle->getAccessToken($authCode);
         return redirect('/');
-      }
-      // </StoreTokensSnippet>
-      catch (League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
+      } catch (League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
         return redirect('/')
           ->with('error', 'Error requesting access token')
           ->with('errorDetail', $e->getMessage());
@@ -83,6 +71,70 @@ class AuthController extends Controller
     return redirect('/')
       ->with('error', $request->query('error'))
       ->with('errorDetail', $request->query('error_description'));
+  }
+
+  public function subscribe()
+  {
+
+    /* 
+    https://graph.microsoft.com/v1.0/subscriptions
+    {
+      "changeType": "updated",
+      "notificationUrl": "https://localhost/notify",
+      "resource": "/drive/root",
+      "expirationDateTime":"2020-09-20T18:23:45.9356913Z",
+      "clientState": "secretClientValue",
+      "latestSupportedTlsVersion": "v1_2"
+    } 
+    */
+
+    $guzzle = new \GuzzleHttp\Client();
+    $url = 'https://login.microsoftonline.com/common/oauth2/token?api-version=1.0';
+    $token = json_decode($guzzle->post($url, [
+      'form_params' => [
+        'client_id' => config('services.graph.clientId'),
+        'client_secret' => config('services.graph.clientSecret'),
+        'resource' => 'https://graph.microsoft.com/',
+        'grant_type' => 'client_credentials',
+      ],
+    ])->getBody()->getContents());
+    $accessToken = $token->access_token;
+
+    $url = 'https://graph.microsoft.com/v1.0/subscriptions';
+    $res = json_decode($guzzle->post($url, [
+      'headers' => [
+        'authorization' => 'Bearer ' . $accessToken
+      ],
+      'json' => [
+        'changeType' => 'updated',
+        'notificationUrl' => 'https://localhost/notify',
+        'resource' => '/drive/root',
+        'expirationDateTime' => '2020-09-20T18:23:45.9356913Z'
+      ],
+    ])->getBody()->getContents());
+    var_dump($res);
+
+
+
+
+    var_dump($accessToken);
+    exit;
+
+    $graph = new Graph();
+    $graph->setAccessToken($token);
+
+    $user = $graph->createRequest('GET', '/me')
+      ->setReturnType(Model\User::class)
+      ->execute();
+  }
+
+  public function notify()
+  {
+    if ($validationToken = $_POST['validationToken']) {
+      Cache::set('validationToken', $validationToken);
+    } else {
+      Cache::set('validationToken', 'validationTokenTest');
+    }
   }
 
   public function logout()

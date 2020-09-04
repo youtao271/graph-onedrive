@@ -14,8 +14,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', 'HomeController@welcome');
-Route::get('/login', 'AuthController@signin');
+Route::get('/login', 'AuthController@login');
 Route::get('/callback', 'AuthController@callback');
-Route::get('/logout', 'AuthController@signout');
+Route::get('/logout', 'AuthController@logout');
 Route::get('/calendar', 'CalendarController@calendar');
 
+Route::get('/subscribe', 'AuthController@subscribe');
+Route::post('/notify', 'AuthController@notify');
