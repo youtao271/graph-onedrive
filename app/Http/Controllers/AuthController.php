@@ -21,17 +21,16 @@ class AuthController extends Controller
   public function login()
   {
     $accessToken = Cache::get('accessToken');
-    /* if ($accessToken) {
+    if ($accessToken) {
       if ($accessToken->hasExpired()) {
         $refreshToken = $accessToken->getRefreshToken();
         $this->authHandle->refreshAccessToken($refreshToken);
       }
       return redirect('/');
-    } */
+    }
 
     $authUrl = $this->authHandle->getAuthorizationUrl();
-    var_dump($authUrl);
-    exit;
+    //var_dump($authUrl);exit;
 
     Cache::set('oauthState', $this->authHandle->getState());
 
