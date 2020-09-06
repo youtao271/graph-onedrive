@@ -44,11 +44,34 @@ class GraphRequest {
 
     public function getFiles()
     {
-        $files = $this->graph->createCollectionRequest("GET", "/me/drive/root/children")
+        $files = $this->graph->createCollectionRequest("GET", '/me/drive/root/children?\$expand=children')
         ->setReturnType(Model\DriveItem::class)
-        ->getPage();
+        ->execute();
+
+        if($files){
+            foreach($files as $file){
+                var_dump(
+                    [
+                        'id' => $file->getId(),
+                        'name' => $file->getName(),
+                        'webUrl' => $file->getWebUrl(),
+                        'folder' => $file->getFolder()?$file->getFolder()->getChildCount():0,
+                        'ctime' => $file->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
+                        'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
+                        'content' => $file->getContent(),
+                    ]
+                );
+            }
+        }
 
         return $files;
+    }
+
+    private function getFileItems($id){
+        $files = $this->graph->createCollectionRequest("GET", "/drives/me/items/{$id}/children")
+        ->setReturnType(Model\DriveItem::class)
+        ->execute();
+
     }
     
 

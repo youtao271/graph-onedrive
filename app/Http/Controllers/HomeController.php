@@ -17,13 +17,13 @@ class HomeController extends Controller
     $accessToken = Cache::get('accessToken');
     $user = Cache::get('user');
 
-    var_dump(time());
-    var_dump($accessToken);
-    var_dump($accessToken->getRefreshToken());
-    var_dump($accessToken->hasExpired());
+    // var_dump(time());
+    // var_dump($accessToken);
+    // var_dump($accessToken->getRefreshToken());
+    // var_dump($accessToken->hasExpired());
 
     $graph = new GraphRequest;
-    var_dump($graph->getUserInfo());
+    // var_dump($graph->getUserInfo());
     var_dump($graph->getFiles());
   }
 }
