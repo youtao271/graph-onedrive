@@ -30,30 +30,44 @@ class HomeController extends Controller
         var_dump(Cache::get('课件'));
     }
 
-    public function index($path='/')
+    public function index($path = '/')
     {
-        if($path === '/')   $this->root();
+        if ($path === '/')   $this->root();
 
         //var_dump($path);exit;
 
-        [$parent, $key] = array_slice(['', ...array_slice(explode('/', $path), -2)], -2);
-        var_dump(['', ...array_slice(explode('/', $path), -2)]);
-        var_dump($parent, $key);
+        $path = '/' . $path;
 
-        if($files = Cache::get($key)){
+        [$parent, $key] = array_slice(explode('/', $path), -2);
 
-        }else{
-            $files = Cache::get($parent);
+        if ($files = Cache::get($key)) {
+
+            if ($files['path'] !== $path) {
+                return redirect($files['path']);
+            }
+        } else {
+            $parent = $parent ? $parent : '/';
+            if ($files = Cache::get($parent)) {
+                if (!array_key_exists($key, $files['files'])) {
+                    echo '文件不存在1';
+                }
+            } else {
+                echo '文件不存在2';
+            }
         }
-
-        if($files['path'] !== $path)    echo 'not found';
         var_dump($files);
-
     }
 
     private function root()
     {
         var_dump(Cache::get('/'));
         exit;
+    }
+
+    public function refresh()
+    {
+        $graph = new GraphRequest;
+        $graph->getFiles();
+        echo 'Refresh OK!';
     }
 }

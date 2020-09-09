@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-//Route::get('/', 'HomeController@welcome');
+Route::get('/refresh', 'HomeController@refresh');
 Route::get('/login', 'AuthController@login');
 Route::get('/callback', 'AuthController@callback');
 Route::get('/logout', 'AuthController@logout');

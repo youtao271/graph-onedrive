@@ -69,7 +69,8 @@ class GraphRequest
                     'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
                     'size' => $file->getSize(),
                 ];
-                array_push($fileList, $tmp);
+                // array_push($fileList, [$tmp['name']=>$tmp]);
+                $fileList[$tmp['name']] = $tmp;
                 if ($tmp['folder'])  array_push($stack, $tmp['name'].':'.$tmp['id']);
             }
             $files = null;
