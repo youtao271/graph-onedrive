@@ -47,34 +47,34 @@ class GraphRequest
 
     public function getFiles()
     {
-        $files = $this->graph->createCollectionRequest("GET", '/me/drive/root/children?')
+        $files = $this->graph->createCollectionRequest("GET", '/me/drive/root/children?$select=id,name,folder,fileSystemInfo,size')
             ->setReturnType(Model\DriveItem::class)
             ->execute();
         //->getBody();
         if(empty($files))   return '';
 
         $stack = ['/'];
+        $path = '/';
         while ($key = array_shift($stack)) {
+            [$name, $id] = [...explode(':', $key), ''];
+            if($name !== '/')   $path .= $path === '/' ? $name : '/'.$name;
             $fileList = [];
-            $files = $files ? $files : $this->getFileItems($key);
+            $files = $files ? $files : $this->getFileItems($id);
             foreach ($files as $file) {
                 $tmp = [
                     'id' => $file->getId(),
                     'name' => $file->getName(),
-                    'webUrl' => $file->getWebUrl(),
                     'folder' => $file->getFolder() ? $file->getFolder()->getChildCount() : 0,
                     'ctime' => $file->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
                     'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
                     'size' => $file->getSize(),
                 ];
                 array_push($fileList, $tmp);
-                if ($tmp['folder'])  array_push($stack, $tmp['id']);
+                if ($tmp['folder'])  array_push($stack, $tmp['name'].':'.$tmp['id']);
             }
             $files = null;
-            Cache::set($key, $fileList);
+            Cache::set($name, ['path'=>$path, 'files'=>$fileList]);
         }
-
-        //var_dump($fileList, $stack);exit;
 
         return Cache::get('/');
     }
