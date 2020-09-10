@@ -34,7 +34,7 @@ class HomeController extends Controller
     {
         if ($path === '/')   $this->root();
 
-        //var_dump($path);exit;
+        if ($path === 'api')   return redirect('/api/index');
 
         $path = '/' . $path;
 
@@ -51,6 +51,12 @@ class HomeController extends Controller
                 if (!array_key_exists($key, $files['files'])) {
                     echo '文件不存在1';
                 }
+
+                $graph = new GraphRequest;
+                // $content = $graph->getFileContent($files['files'][$key]['id']);
+                $graph->downloadFile($files['files'][$key]['id'], $key);
+                //var_dump($key);
+                exit;
             } else {
                 echo '文件不存在2';
             }
