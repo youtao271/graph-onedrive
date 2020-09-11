@@ -11,71 +11,71 @@ use Microsoft\Graph\Graph;
 class AuthController extends Controller
 {
 
-  private $authHandle;
+    private $authHandle;
 
-  public function __construct()
-  {
-    $this->authHandle = new GraphToken;
-  }
-
-  public function login()
-  {
-    $accessToken = '';//Cache::get('accessToken');
-    if ($accessToken) {
-      if ($accessToken->hasExpired()) {
-        $refreshToken = $accessToken->getRefreshToken();
-        $this->authHandle->refreshAccessToken($refreshToken);
-      }
-      return redirect('/');
+    public function __construct()
+    {
+        $this->authHandle = new GraphToken;
     }
 
-    $authUrl = $this->authHandle->getAuthorizationUrl();
-    //var_dump($authUrl);exit;
+    public function login()
+    {
+        $accessToken = ''; //Cache::get('accessToken');
+        if ($accessToken) {
+            if ($accessToken->hasExpired()) {
+                $refreshToken = $accessToken->getRefreshToken();
+                $this->authHandle->refreshAccessToken($refreshToken);
+            }
+            return redirect('/');
+        }
 
-    Cache::set('oauthState', $this->authHandle->getState());
+        $authUrl = $this->authHandle->getAuthorizationUrl();
+        //var_dump($authUrl);exit;
 
-    return redirect()->away($authUrl);
-  }
+        Cache::set('oauthState', $this->authHandle->getState());
 
-  public function callback(Request $request)
-  {
-    $expectedState = Cache::get('oauthState');
-    $providedState = $request->query('state');
-
-    if (!isset($expectedState)) {
-      return redirect('/');
+        return redirect()->away($authUrl);
     }
 
-    if (!isset($providedState) || $expectedState != $providedState) {
-      return redirect('/')
-        ->with('error', 'Invalid auth state')
-        ->with('errorDetail', 'The provided auth state did not match the expected value');
-    }
+    public function callback(Request $request)
+    {
+        $expectedState = Cache::get('oauthState');
+        $providedState = $request->query('state');
 
-    // Authorization code should be in the "code" query param
-    $authCode = $request->query('code');
-    if (isset($authCode)) {
+        if (!isset($expectedState)) {
+            return redirect('/');
+        }
 
-      try {
-        //获取accessToken并存储在Redis中
-        $this->authHandle->getAccessToken($authCode);
-        return redirect('/');
-      } catch (League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
+        if (!isset($providedState) || $expectedState != $providedState) {
+            return redirect('/')
+                ->with('error', 'Invalid auth state')
+                ->with('errorDetail', 'The provided auth state did not match the expected value');
+        }
+
+        // Authorization code should be in the "code" query param
+        $authCode = $request->query('code');
+        if (isset($authCode)) {
+
+            try {
+                //获取accessToken并存储在Redis中
+                $this->authHandle->getAccessToken($authCode);
+                return redirect('/');
+            } catch (League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
+                return redirect('/')
+                    ->with('error', 'Error requesting access token')
+                    ->with('errorDetail', $e->getMessage());
+            }
+        }
+
         return redirect('/')
-          ->with('error', 'Error requesting access token')
-          ->with('errorDetail', $e->getMessage());
-      }
+            ->with('error', $request->query('error'))
+            ->with('errorDetail', $request->query('error_description'));
     }
 
-    return redirect('/')
-      ->with('error', $request->query('error'))
-      ->with('errorDetail', $request->query('error_description'));
-  }
+    public function subscribe()
+    {
 
-  public function subscribe()
-  {
-
-    /* 
+        /* 
     https://graph.microsoft.com/v1.0/subscriptions
     {
       "changeType": "updated",
@@ -87,58 +87,67 @@ class AuthController extends Controller
     } 
     */
 
-    $guzzle = new \GuzzleHttp\Client();
-    $url = 'https://login.microsoftonline.com/common/oauth2/token?api-version=1.0';
-    $token = json_decode($guzzle->post($url, [
-      'form_params' => [
-        'client_id' => config('services.graph.clientId'),
-        'client_secret' => config('services.graph.clientSecret'),
-        'resource' => 'https://graph.microsoft.com/',
-        'grant_type' => 'client_credentials',
-      ],
-    ])->getBody()->getContents());
-    $accessToken = $token->access_token;
+        $guzzle = new \GuzzleHttp\Client();
+        $url = 'https://login.microsoftonline.com/common/oauth2/token?api-version=1.0';
+        /* $token = json_decode($guzzle->post($url, [
+            'form_params' => [
+                'client_id' => config('services.graph.clientId'),
+                'client_secret' => config('services.graph.clientSecret'),
+                'resource' => 'https://graph.microsoft.com/',
+                'grant_type' => 'client_credentials',
+            ],
+        ])->getBody()->getContents());
+        $accessToken = $token->access_token; */
 
-    $url = 'https://graph.microsoft.com/v1.0/subscriptions';
-    $res = json_decode($guzzle->post($url, [
-      'headers' => [
-        'authorization' => 'Bearer ' . $accessToken
-      ],
-      'json' => [
-        'changeType' => 'updated',
-        'notificationUrl' => config('services.graph.notificationUrl'),
-        'resource' => '/drive/root',
-        'expirationDateTime' => '2020-09-20T18:23:45.9356913Z'
-      ],
-    ])->getBody()->getContents());
-    var_dump($res);
+        $accessToken = Cache::get('accessToken')->getToken();
+
+        $url = 'https://graph.microsoft.com/v1.0/subscriptions';
+
+        try {
+            $res = json_decode($guzzle->post($url, [
+                'headers' => [
+                    'authorization' => 'Bearer ' . $accessToken
+                ],
+                'json' => [
+                    'changeType' => 'updated',
+                    'notificationUrl' => config('services.graph.notificationUrl'),
+                    'resource' => 'me/drive/root',
+                    'expirationDateTime' => '2020-09-20T18:23:45.9356913Z',
+                    "clientState" => "secretClientValue",
+                    "latestSupportedTlsVersion" => "v1_2"
+                ],
+            ])->getBody()->getContents());
+            var_dump($res);
+        } catch (\Exception $e) {
+            var_dump($e->getMessage());
+        }
 
 
 
 
-    var_dump($accessToken);
-    exit;
+        var_dump($accessToken);
+        exit;
 
-    $graph = new Graph();
-    $graph->setAccessToken($token);
+        $graph = new Graph();
+        $graph->setAccessToken($token);
 
-    $user = $graph->createRequest('GET', '/me')
-      ->setReturnType(Model\User::class)
-      ->execute();
-  }
-
-  public function notify()
-  {
-    if ($validationToken = $_POST['validationToken']) {
-      Cache::set('validationToken', $validationToken);
-    } else {
-      Cache::set('validationToken', 'validationTokenTest');
+        $user = $graph->createRequest('GET', '/me')
+            ->setReturnType(Model\User::class)
+            ->execute();
     }
-  }
 
-  public function logout()
-  {
-    $this->authHandle->signout();
-    return redirect('/');
-  }
+    public function notify()
+    {
+        if ($validationToken = $_POST['validationToken']) {
+            Cache::set('validationToken', $validationToken);
+        } else {
+            Cache::set('validationToken', 'validationTokenTest');
+        }
+    }
+
+    public function logout()
+    {
+        $this->authHandle->signout();
+        return redirect('/');
+    }
 }
