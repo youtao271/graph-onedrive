@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Tokens\GraphToken;
 use Microsoft\Graph\Graph;
+use App\Http\Requests\GraphRequest;
 
 class AuthController extends Controller
 {
@@ -20,7 +21,7 @@ class AuthController extends Controller
 
     public function login()
     {
-        $accessToken = ''; //Cache::get('accessToken');
+        $accessToken = Cache::get('accessToken');
         if ($accessToken) {
             if ($accessToken->hasExpired()) {
                 $refreshToken = $accessToken->getRefreshToken();
@@ -99,7 +100,8 @@ class AuthController extends Controller
         ])->getBody()->getContents());
         $accessToken = $token->access_token; */
 
-        $accessToken = Cache::get('accessToken')->getToken();
+        $GraphRequest = new GraphRequest;
+        $accessToken = $GraphRequest->getToken();
 
         $url = 'https://graph.microsoft.com/v1.0/subscriptions';
 
