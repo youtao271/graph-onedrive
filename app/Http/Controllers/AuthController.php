@@ -73,6 +73,9 @@ class AuthController extends Controller
             ->with('errorDetail', $request->query('error_description'));
     }
 
+    public function testSubscribe(){
+        var_dump(Cache::get('validationToken'));
+    }
     public function subscribe()
     {
 
