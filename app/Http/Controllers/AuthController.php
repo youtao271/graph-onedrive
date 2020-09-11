@@ -145,11 +145,12 @@ class AuthController extends Controller
 
     public function notify()
     {
-        if ($validationToken = $_GET['validationToken']) {
+        /* if ($validationToken = $_GET['validationToken']) {
             Cache::set('validationToken', $validationToken);
         } else {
             Cache::set('validationToken', 'validationTokenTest');
-        }
+        } */
+        return response($_REQUEST['validationtoken'])->header('Content-Type', 'text/plain');
     }
 
     public function logout()
