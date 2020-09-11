@@ -20,6 +20,7 @@ Route::get('/logout', 'AuthController@logout');
 Route::get('/calendar', 'CalendarController@calendar');
 
 Route::get('/subscribe', 'AuthController@subscribe');
+Route::get('/testSubscribe', 'AuthController@testSubscribe');
 Route::post('/notify', 'AuthController@notify');
 
 // Route::any('/{any}', 'HomeController@index');
