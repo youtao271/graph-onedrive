@@ -54,8 +54,9 @@ class HomeController extends Controller
 
                 $graph = new GraphRequest;
                 // $content = $graph->getFileContent($files['files'][$key]['id']);
-                $graph->downloadFile($files['files'][$key]['id'], $key);
-                //var_dump($key);
+                $fileInfo = $graph->downloadFile($files['files'][$key]['id'], $key);
+                header('Location: ' . $fileInfo['@microsoft.graph.downloadUrl']);
+                // var_dump($fileInfo);
                 exit;
             } else {
                 echo '文件不存在2';

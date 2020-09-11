@@ -96,7 +96,7 @@ class GraphRequest
             ->execute()->getContents();
     }
 
-    public function downloadFile($id, $name)
+    public function downloadFile($id)
     {
         // Header ( "Content-type: application/octet-stream" );
         // header('Content-Disposition: attachment;filename="' . urlencode($name));
@@ -109,8 +109,7 @@ class GraphRequest
             ->setReturnType(Model\DriveItem::class)
             ->execute();
         $file = (Array)$info;
-        $file = array_pop($file);
-        header('Location: ' . $file['@microsoft.graph.downloadUrl']);
+        return array_pop($file);
         
     }
 

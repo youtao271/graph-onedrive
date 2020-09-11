@@ -37,7 +37,8 @@ return [
     'urlAuthorize'            => env('OAUTH_AUTHORITY') . env('OAUTH_AUTHORIZE_ENDPOINT'),
     'urlAccessToken'          => env('OAUTH_AUTHORITY') . env('OAUTH_TOKEN_ENDPOINT'),
     'urlResourceOwnerDetails' => '',
-    'scopes'                  => env('OAUTH_SCOPES')
+    'scopes'                  => env('OAUTH_SCOPES'),
+    'notificationUrl'         => env('NOTIFICATION_URL')
   ],
 
 ];

@@ -106,7 +106,7 @@ class AuthController extends Controller
       ],
       'json' => [
         'changeType' => 'updated',
-        'notificationUrl' => 'https://localhost/notify',
+        'notificationUrl' => config('services.graph.notificationUrl'),
         'resource' => '/drive/root',
         'expirationDateTime' => '2020-09-20T18:23:45.9356913Z'
       ],
