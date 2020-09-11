@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Tokens\GraphToken;
 use Microsoft\Graph\Graph;
+use Microsoft\Graph\Model;
 use App\Http\Requests\GraphRequest;
 
 class AuthController extends Controller
@@ -73,7 +74,8 @@ class AuthController extends Controller
             ->with('errorDetail', $request->query('error_description'));
     }
 
-    public function testSubscribe(){
+    public function testSubscribe()
+    {
         var_dump(Cache::get('validationToken'));
     }
     public function subscribe()
@@ -143,7 +145,7 @@ class AuthController extends Controller
 
     public function notify()
     {
-        if ($validationToken = $_POST['validationToken']) {
+        if ($validationToken = $_GET['validationToken']) {
             Cache::set('validationToken', $validationToken);
         } else {
             Cache::set('validationToken', 'validationTokenTest');
@@ -154,5 +156,22 @@ class AuthController extends Controller
     {
         $this->authHandle->signout();
         return redirect('/');
+    }
+
+
+    public function testWebhooks()
+    {
+        $sub = new Model\Subscription();
+        $sub->setChangeType("updated");
+        $sub->setNotificationUrl("https://pan.9dutv.com/notify");
+        $sub->setResource("/me/drive/root");
+        $time = new \DateTime();
+        $time->add(new \DateInterval("PT1H"));
+        $sub->setExpirationDateTime($time);
+
+        $GraphRequest = new GraphRequest;
+        $res = $GraphRequest->webhooks($sub);
+
+        var_dump($res);
     }
 }

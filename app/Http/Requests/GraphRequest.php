@@ -108,9 +108,8 @@ class GraphRequest
         $info = $this->graph->createRequest("GET", "/me/drive/items/{$id}/?\$select=@microsoft.graph.downloadUrl")
             ->setReturnType(Model\DriveItem::class)
             ->execute();
-        $file = (Array)$info;
+        $file = (array)$info;
         return array_pop($file);
-        
     }
 
     public function sendMail()
@@ -144,5 +143,15 @@ class GraphRequest
         } catch (League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
             var_dump($e->getMessage());
         }
+    }
+
+    public function webhooks($sub)
+    {
+        $subResult = $this->graph->createRequest("POST", "/subscriptions")
+            ->attachBody($sub)
+            ->setReturnType(Model\Subscription::class)
+
+            ->execute();
+        return $subResult->getResource();
     }
 }
