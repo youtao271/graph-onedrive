@@ -76,6 +76,7 @@ class AuthController extends Controller
 
     public function testSubscribe()
     {
+        var_dump(config('services.graph.notificationUrl'));
         var_dump(Cache::get('validationToken'));
     }
     public function subscribe()
