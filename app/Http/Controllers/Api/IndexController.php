@@ -14,8 +14,8 @@ class IndexController extends Controller
     public function index($path = '/')
     {
         if ($path === 'all') {
-            $this->getAll();
-            exit;
+            $ret = $this->getAll();
+            return $this->response($ret);
         }
         $path = '/' . $path;
 
@@ -58,7 +58,7 @@ class IndexController extends Controller
                 if ($file['folder']) array_push($stack, ['key' => $file['name'], 'id' => $file['id']]);
             }
         }
-        return $this->response($ret);
+        return $ret;
     }
 
     private function response($data=null, $code='200', $msg='加载成功'){
