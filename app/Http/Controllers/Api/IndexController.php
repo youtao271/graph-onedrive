@@ -13,7 +13,10 @@ class IndexController extends Controller
 
     public function index($path = '/')
     {
-
+        if ($path === 'all') {
+            $this->getAll();
+            exit;
+        }
         $path = '/' . $path;
 
         [$parent, $key] = array_slice(explode('/', $path), -2);
@@ -40,6 +43,22 @@ class IndexController extends Controller
                 return $this->response('', '404', '文件不存在2');
             }
         }
+    }
+
+    private function getAll()
+    {
+        $ret = [];
+        $stack = [['key' => '/', 'id' => 0]];
+        while ($cur = array_shift($stack)) {
+            $data = Cache::get($cur['key']);
+            if (empty($data['files']))   continue;
+            foreach ($data['files'] as $file) {
+                $file['pid'] = $cur['id'];
+                array_push($ret, $file);
+                if ($file['folder']) array_push($stack, ['key' => $file['name'], 'id' => $file['id']]);
+            }
+        }
+        return $this->response($ret);
     }
 
     private function response($data=null, $code='200', $msg='加载成功'){
