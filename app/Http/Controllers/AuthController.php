@@ -22,7 +22,7 @@ class AuthController extends Controller
 
     public function login()
     {
-        $accessToken = Cache::get('accessToken');
+        $accessToken = '';//Cache::get('accessToken');
         if ($accessToken) {
             if ($accessToken->hasExpired()) {
                 $refreshToken = $accessToken->getRefreshToken();
@@ -82,7 +82,7 @@ class AuthController extends Controller
     public function subscribe()
     {
 
-        /* 
+        /*
     https://graph.microsoft.com/v1.0/subscriptions
     {
       "changeType": "updated",
@@ -91,7 +91,7 @@ class AuthController extends Controller
       "expirationDateTime":"2020-09-20T18:23:45.9356913Z",
       "clientState": "secretClientValue",
       "latestSupportedTlsVersion": "v1_2"
-    } 
+    }
     */
 
         $guzzle = new \GuzzleHttp\Client();

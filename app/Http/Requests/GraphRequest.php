@@ -68,6 +68,10 @@ class GraphRequest
                     'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
                     'size' => $file->getSize(),
                 ];
+                if($file->getFolder()){
+                    $tmp['folder'] = true;
+                    $tmp['children'] = $file->getFolder()->getChildCount();
+                }
                 $fileList[$tmp['name']] = $tmp;
                 if ($tmp['folder'])  array_push($stack, $tmp['name'] . ':' . $tmp['id']);
             }
@@ -80,9 +84,10 @@ class GraphRequest
 
     private function getFileItems($id)
     {
-        return $this->graph->createCollectionRequest("GET", "/drives/me/items/{$id}/children")
+        $items = $this->graph->createCollectionRequest("GET", "/drives/me/items/{$id}/children")
             ->setReturnType(Model\DriveItem::class)
             ->execute();
+        return $items;
     }
 
     public function getFileContent($id)
@@ -103,7 +108,7 @@ class GraphRequest
         // header('Cache-Control: max-age=0');
         // echo $this->graph->createRequest("GET", "/me/drive/items/{$id}/content")
         //     ->setReturnType(\GuzzleHttp\Psr7\Stream::class)
-        //     ->execute()->getContents();   
+        //     ->execute()->getContents();
 
         $info = $this->graph->createRequest("GET", "/me/drive/items/{$id}/?\$select=@microsoft.graph.downloadUrl")
             ->setReturnType(Model\DriveItem::class)
