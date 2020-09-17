@@ -22,7 +22,7 @@ class AuthController extends Controller
 
     public function login()
     {
-        $accessToken = '';//Cache::get('accessToken');
+        $accessToken = Cache::get('accessToken');
         if ($accessToken) {
             if ($accessToken->hasExpired()) {
                 $refreshToken = $accessToken->getRefreshToken();
