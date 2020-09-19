@@ -54,7 +54,7 @@ class HomeController extends Controller
 
                 $graph = new GraphRequest;
                 // $content = $graph->getFileContent($files['files'][$key]['id']);
-                $fileInfo = $graph->downloadFile($files['files'][$key]['id'], $key);
+                $fileInfo = $graph->downloadFile($files['files'][$key]['id']);
                 header('Location: ' . $fileInfo['@microsoft.graph.downloadUrl']);
                 // var_dump($fileInfo);
                 exit;

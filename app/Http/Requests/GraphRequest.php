@@ -52,7 +52,7 @@ class GraphRequest
             ->execute();
         if (empty($files))   return '';
 
-        $stack = ['/'];
+        $stack = ['/:/'];
         $path = '/';
         while ($key = array_shift($stack)) {
             [$name, $id] = [...explode(':', $key), ''];
@@ -72,11 +72,14 @@ class GraphRequest
                     $tmp['folder'] = true;
                     $tmp['children'] = $file->getFolder()->getChildCount();
                 }
-                $fileList[$tmp['name']] = $tmp;
+                $fileList[$tmp['id']] = $tmp;
                 if ($tmp['folder'])  array_push($stack, $tmp['name'] . ':' . $tmp['id']);
             }
             $files = null;
-            Cache::set($name, ['path' => $path, 'files' => $fileList]);
+            var_dump($name.'--'.$id, $fileList);
+            ob_flush();
+            flush();
+            Cache::set($id, ['path' => $path, 'files' => $fileList]);
         }
 
         return Cache::get('/');

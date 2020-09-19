@@ -48,14 +48,14 @@ class IndexController extends Controller
     private function getAll()
     {
         $ret = [];
-        $stack = [['key' => '/', 'id' => 0]];
-        while ($cur = array_shift($stack)) {
-            $data = Cache::get($cur['key']);
+        $stack = ['/'];
+        while ($id = array_shift($stack)) {
+            $data = Cache::get($id);
             if (empty($data['files']))   continue;
             foreach ($data['files'] as $file) {
-                $file['pid'] = $cur['id'];
+                $file['pid'] = $id === '/' ? 0 : $id;
                 array_push($ret, $file);
-                if ($file['folder']) array_push($stack, ['key' => $file['name'], 'id' => $file['id']]);
+                if ($file['folder']) array_push($stack, $file['id']);
             }
         }
         return $ret;
