@@ -18,5 +18,7 @@ use Illuminate\Support\Facades\Route;
     return $request->user();
 }); */
 
-Route::any('{any}', 'Api\IndexController@index')->where('any', '.*')->name('react');
+// Route::any('{any}', 'Api\IndexController@index')->where('any', '.*')->name('react');
+Route::get('/all', 'Api\IndexController@all');
+Route::get('/content/{id}', 'Api\IndexController@content');
 

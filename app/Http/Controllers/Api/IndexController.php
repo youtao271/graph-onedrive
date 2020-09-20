@@ -61,6 +61,34 @@ class IndexController extends Controller
         return $ret;
     }
 
+    public function all()
+    {
+        $ret = [];
+        $stack = ['/'];
+        while ($id = array_shift($stack)) {
+            $data = Cache::get($id);
+            if (empty($data['files']))   continue;
+            foreach ($data['files'] as $file) {
+                $file['pid'] = $id === '/' ? 0 : $id;
+                array_push($ret, $file);
+                if ($file['folder']) array_push($stack, $file['id']);
+            }
+        }
+        return $this->response($ret);
+    }
+
+    public function content($id)
+    {
+        $content = Cache::get($id);
+        if(!$content){
+            $graph = new GraphRequest;
+            $content = $graph->getFileContent($id);
+            Cache::add($id, $content, 5*60);
+        }
+
+        return $this->response($content);
+    }
+
     private function response($data=null, $code='200', $msg='加载成功'){
         $ret = [
             'code' => $code,

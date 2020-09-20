@@ -32,6 +32,7 @@ class HomeController extends Controller
 
     public function index($path = '/')
     {
+        var_dump(config('ext'));
         if ($path === '/')   $this->root();
 
         if ($path === 'api')   return redirect('/api/index');
