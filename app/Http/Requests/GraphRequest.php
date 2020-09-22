@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use GuzzleHttp\Psr7\Stream;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model;
 use Illuminate\Support\Facades\Cache;
@@ -54,14 +55,15 @@ class GraphRequest
 
         $stack = ['/:/'];
         $path = '/';
+        $data = [];
         while ($key = array_shift($stack)) {
             [$name, $id] = [...explode(':', $key), ''];
             if ($name !== '/')   $path .= $path === '/' ? $name : '/' . $name;
-            $fileList = [];
             $files = $files ? $files : $this->getFileItems($id);
             foreach ($files as $file) {
                 $tmp = [
                     'id' => $file->getId(),
+                    'pid' => $id === '/' ? 0 : $id,
                     'name' => $file->getName(),
                     'folder' => $file->getFolder() ? $file->getFolder()->getChildCount() : 0,
                     'ctime' => $file->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
@@ -72,15 +74,17 @@ class GraphRequest
                     $tmp['folder'] = true;
                     $tmp['children'] = $file->getFolder()->getChildCount();
                 }
-                $fileList[$tmp['id']] = $tmp;
+                $data[$tmp['id']] = $tmp;
                 if ($tmp['folder'])  array_push($stack, $tmp['name'] . ':' . $tmp['id']);
             }
             $files = null;
             // var_dump($name.'--'.$id, $fileList);
             // ob_flush();
             // flush();
-            Cache::set($id, ['path' => $path, 'files' => $fileList]);
+            // Cache::set($id, ['path' => $path, 'files' => $fileList]);
         }
+
+        Cache::put('/', $data);
 
         return Cache::get('/');
     }
@@ -96,28 +100,29 @@ class GraphRequest
     public function getFileContent($id)
     {
 
-        // $ret = (Array)$files[7];
-        // $file = array_pop($ret);
-        // var_dump(array_shift($file));exit;
         return $this->graph->createRequest("GET", "/me/drive/items/{$id}/content")
-            ->setReturnType(\GuzzleHttp\Psr7\Stream::class)
+            ->setReturnType(Stream::class)
             ->execute()->getContents();
     }
 
     public function downloadFile($id)
     {
-        // Header ( "Content-type: application/octet-stream" );
-        // header('Content-Disposition: attachment;filename="' . urlencode($name));
-        // header('Cache-Control: max-age=0');
-        // echo $this->graph->createRequest("GET", "/me/drive/items/{$id}/content")
-        //     ->setReturnType(\GuzzleHttp\Psr7\Stream::class)
-        //     ->execute()->getContents();
 
         $info = $this->graph->createRequest("GET", "/me/drive/items/{$id}/?\$select=@microsoft.graph.downloadUrl")
             ->setReturnType(Model\DriveItem::class)
             ->execute();
         $file = (array)$info;
         return array_pop($file);
+    }
+
+    public function getFileUrl($id)
+    {
+
+        $info = $this->graph->createRequest("GET", "/me/drive/items/{$id}/?\$select=@microsoft.graph.downloadUrl")
+            ->setReturnType(Model\DriveItem::class)
+            ->execute();
+        $file = (array)$info;
+        return array_pop($file)['@microsoft.graph.downloadUrl'];
     }
 
     public function sendMail()

@@ -26,5 +26,5 @@ Route::post('/notify', 'AuthController@notify');
 
 // Route::any('/{any}', 'HomeController@index');
 
-Route::any('/{any}', 'HomeController@index')->where('any', '.*')->name('react');
+Route::any('/{any}', 'HomeController@index')->where('any', '^(?!api).*')->name('react');
 

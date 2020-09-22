@@ -13,88 +13,94 @@ class IndexController extends Controller
 
     public function index($path = '/')
     {
-        if ($path === 'all') {
-            $ret = $this->getAll();
-            return $this->response($ret);
+        if ($path === '/' || $path === 'all') {
+            return $this->response(Cache::get('/'));
         }
-        $path = '/' . $path;
 
-        [$parent, $key] = array_slice(explode('/', $path), -2);
+        $file = $this->getFile($path);
 
-        if ($files = Cache::get($key)) {
+        if (!$file) return $this->response('', '404', '文件不存在');
 
-            return $this->response($files);
+        if (!$file['folder']) return $this->response($file);
 
-        } else {
-
-            if ($path === '/index')   return $this->response(Cache::get('/'));
-
-            $parent = $parent ? $parent : '/';
-
-            if ($files = Cache::get($parent)) {
-                if (!array_key_exists($key, $files['files'])) {
-                    return $this->response('', '404', '文件不存在1');
-                }
-
-                $graph = new GraphRequest;
-                $content = $graph->getFileContent($files['files'][$key]['id']);
-                return $this->response($content);
-            } else {
-                return $this->response('', '404', '文件不存在2');
-            }
-        }
-    }
-
-    private function getAll()
-    {
-        $ret = [];
-        $stack = ['/'];
-        while ($id = array_shift($stack)) {
-            $data = Cache::get($id);
-            if (empty($data['files']))   continue;
-            foreach ($data['files'] as $file) {
-                $file['pid'] = $id === '/' ? 0 : $id;
-                array_push($ret, $file);
-                if ($file['folder']) array_push($stack, $file['id']);
-            }
-        }
-        return $ret;
-    }
-
-    public function all()
-    {
-        $ret = [];
-        $stack = ['/'];
-        while ($id = array_shift($stack)) {
-            $data = Cache::get($id);
-            if (empty($data['files']))   continue;
-            foreach ($data['files'] as $file) {
-                $file['pid'] = $id === '/' ? 0 : $id;
-                array_push($ret, $file);
-                if ($file['folder']) array_push($stack, $file['id']);
-            }
-        }
-        return $this->response($ret);
+        return $this->response($this->getFileList($path));
     }
 
     public function content($id)
     {
+        $file = $this->getFile($id);
+
+        if (!$file) return $this->response('', '404', '文件不存在');
+
+        if ($file['folder']) return $this->response('', '403', '这是一个文件夹');
+
+        $fileType = $this->getFileType($file['name']);
         $content = Cache::get($id);
-        if(!$content){
-            $graph = new GraphRequest;
-            $content = $graph->getFileContent($id);
-            Cache::add($id, $content, 5*60);
+        if (!$content) {
+            $content = $this->getFileContent($id, $fileType);
         }
 
-        return $this->response($content);
+        return $this->response(['type'=>$fileType, 'data'=>$content]);
     }
 
-    private function response($data=null, $code='200', $msg='加载成功'){
+    private function getFile($id)
+    {
+        $file = array_filter(Cache::get('/'), function ($item) use ($id) {
+            return $item['id'] === $id;
+        });
+        return array_pop($file);
+    }
+
+    private function getFileList($id)
+    {
+        return array_filter(Cache::get('/'), function ($item) use ($id) {
+            return $item['pid'] === $id;
+        });
+    }
+
+    private function getFileType($name)
+    {
+        $fileExt = pathinfo($name, PATHINFO_EXTENSION);
+        $fileType = '';
+        foreach (config('ext') as $key => $ext){
+            if(in_array($fileExt, $ext)){
+                $fileType = $key;
+                break;
+            }
+        }
+        return $fileType;
+    }
+
+    private function getFileContent($id, $type){
+        if($type === 'code'){
+            $ret = $this->getCodeContent($id);
+        }else{
+            $ret = $this->getFileUrl($id);
+        }
+        return $ret;
+    }
+
+    private function getCodeContent($id){
+        $graph = new GraphRequest;
+        $content = $graph->getFileContent($id);
+        Cache::add($id, $content, 5 * 60);
+        return $content;
+    }
+
+    private function getFileUrl($id){
+        $graph = new GraphRequest;
+        $url = $graph->getFileUrl($id);
+        Cache::add($id, $url, 5 * 60);
+        return $url;
+    }
+
+    private function response($data = null, $code = '200', $msg = '加载成功')
+    {
         $ret = [
             'code' => $code,
-            'msg'  => $msg,
+            'msg' => $msg,
         ];
-        if($data)   $ret['data'] = $data;
+        if ($data) $ret['data'] = $data;
         return response()->json($ret);
     }
 }

@@ -34,7 +34,8 @@ class HomeController extends Controller
     {
         if ($path === '/')   $this->root();
 
-        if ($path === 'api')   return redirect('/api/index');
+        // if ($path === 'api')
+            return redirect('/api/index');
 
         $path = '/' . $path;
 
