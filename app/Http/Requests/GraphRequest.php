@@ -74,14 +74,10 @@ class GraphRequest
                     $tmp['folder'] = true;
                     $tmp['children'] = $file->getFolder()->getChildCount();
                 }
-                $data[$tmp['id']] = $tmp;
+                $data[] = $tmp;
                 if ($tmp['folder'])  array_push($stack, $tmp['name'] . ':' . $tmp['id']);
             }
             $files = null;
-            // var_dump($name.'--'.$id, $fileList);
-            // ob_flush();
-            // flush();
-            // Cache::set($id, ['path' => $path, 'files' => $fileList]);
         }
 
         Cache::put('/', $data);
