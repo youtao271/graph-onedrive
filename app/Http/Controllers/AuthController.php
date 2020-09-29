@@ -151,7 +151,7 @@ class AuthController extends Controller
         } else {
             Cache::set('validationToken', 'validationTokenTest');
         } */
-        return response($_REQUEST['validationtoken'])->header('Content-Type', 'text/plain');
+        return response($_REQUEST['validationtoken'], 200, ['Content-Type' => 'text/plain']);
     }
 
     public function logout()
