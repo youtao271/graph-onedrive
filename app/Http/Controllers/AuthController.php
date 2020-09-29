@@ -23,7 +23,7 @@ class AuthController extends Controller
     public function login()
     {
         $accessToken = Cache::get('accessToken');
-        if ($accessToken) {
+        if (0 && $accessToken) {
             if ($accessToken->hasExpired()) {
                 $refreshToken = $accessToken->getRefreshToken();
                 $this->authHandle->refreshAccessToken($refreshToken);
@@ -81,35 +81,14 @@ class AuthController extends Controller
     }
     public function subscribe()
     {
-
-        /*
-    https://graph.microsoft.com/v1.0/subscriptions
-    {
-      "changeType": "updated",
-      "notificationUrl": "https://localhost/notify",
-      "resource": "/drive/root",
-      "expirationDateTime":"2020-09-20T18:23:45.9356913Z",
-      "clientState": "secretClientValue",
-      "latestSupportedTlsVersion": "v1_2"
-    }
-    */
-
         $guzzle = new \GuzzleHttp\Client();
         $url = 'https://login.microsoftonline.com/common/oauth2/token?api-version=1.0';
-        /* $token = json_decode($guzzle->post($url, [
-            'form_params' => [
-                'client_id' => config('services.graph.clientId'),
-                'client_secret' => config('services.graph.clientSecret'),
-                'resource' => 'https://graph.microsoft.com/',
-                'grant_type' => 'client_credentials',
-            ],
-        ])->getBody()->getContents());
-        $accessToken = $token->access_token; */
 
         $GraphRequest = new GraphRequest;
         $accessToken = $GraphRequest->getToken();
 
         $url = 'https://graph.microsoft.com/v1.0/subscriptions';
+        // var_dump(config('services.graph.notificationUrl'));exit;
 
         try {
             $res = json_decode($guzzle->post($url, [
@@ -118,14 +97,14 @@ class AuthController extends Controller
                 ],
                 'json' => [
                     'changeType' => 'updated',
-                    'notificationUrl' => config('services.graph.notificationUrl'),
+                    'notificationUrl' => 'https://pan.9dutv.com/notify',
                     'resource' => 'me/drive/root',
-                    'expirationDateTime' => '2020-09-20T18:23:45.9356913Z',
+                    'expirationDateTime' => '2020-10-20T18:23:45.9356913Z',
                     "clientState" => "secretClientValue",
                     "latestSupportedTlsVersion" => "v1_2"
                 ],
             ])->getBody()->getContents());
-            var_dump($res);
+            var_dump($res);exit;
         } catch (\Exception $e) {
             var_dump($e->getMessage());
         }
