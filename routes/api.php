@@ -20,7 +20,12 @@ use Illuminate\Support\Facades\Route;
 
 // Route::any('{any}', 'Api\IndexController@index')->where('any', '.*')->name('react');
 // Route::get('/all', 'Api\IndexController@all');
-Route::get('/content/{id}', 'Api\IndexController@content');
-Route::get('/', 'Api\IndexController@index');
-Route::get('/{any}', 'Api\IndexController@index')->where('any', '.*');
+
+Route::middleware('cors')->group(function () {
+
+    Route::get('/content/{id}', 'Api\IndexController@content');
+    Route::get('/', 'Api\IndexController@index');
+    Route::get('/{any}', 'Api\IndexController@index')->where('any', '.*');
+
+});
 

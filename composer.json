@@ -18,7 +18,8 @@
         "microsoft/microsoft-graph": "^1.18",
         "php-parallel-lint/php-console-color": "^0.3.0",
         "php-parallel-lint/php-console-highlighter": "^0.5.0",
-      "ext-json": "*"
+      "ext-json": "*",
+        "ext-http": "*"
     },
     "require-dev": {
         "facade/ignition": "^1.4",

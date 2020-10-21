@@ -72,7 +72,7 @@ class IndexController extends Controller
     }
 
     private function getFileContent($id, $type){
-        if($type === 'code'){
+        if($type === 'code' || $type === 'md'){
             $ret = $this->getCodeContent($id);
         }else{
             $ret = $this->getFileUrl($id);
@@ -83,7 +83,7 @@ class IndexController extends Controller
     private function getCodeContent($id){
         $graph = new GraphRequest;
         $content = $graph->getFileContent($id);
-        Cache::add($id, $content, 5 * 60);
+        Cache::put($id, $content, 5 * 60);
         return $content;
     }
 
