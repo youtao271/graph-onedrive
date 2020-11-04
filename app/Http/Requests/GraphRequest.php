@@ -138,7 +138,7 @@ class GraphRequest
                 ->execute();
             $tmp = [
                 'id' => $file->getId(),
-                'pid' => $id,
+                'pid' => $id==='root' ? 0 : $id,
                 'name' => $file->getName(),
                 'ctime' => $file->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
                 'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
