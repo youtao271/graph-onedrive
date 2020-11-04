@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GraphRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class IndexController extends Controller
@@ -41,6 +42,15 @@ class IndexController extends Controller
         }
 
         return $this->response(['type'=>$fileType, 'data'=>$content]);
+    }
+
+    public function create(Request $request){
+        $id = $request->input('id');
+        $name = $request->input('name');
+        $graph = new GraphRequest;
+        $ret = $graph->createDirectory($id, $name);
+
+        return $this->response(null, $ret['code'], $ret['msg']);
     }
 
     private function getFile($id)

@@ -3,10 +3,14 @@
 namespace App\Http\Requests;
 
 use GuzzleHttp\Psr7\Stream;
+use Illuminate\Http\Request;
+use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Tokens\GraphToken;
+use stdClass;
+use GuzzleHttp\Exception\RequestException;
 
 class GraphRequest
 {
@@ -41,7 +45,7 @@ class GraphRequest
             $user = $this->graph->createRequest('GET', '/me')
                 ->setReturnType(Model\User::class)
                 ->execute();
-            Cache::set('user', $user);
+            Cache::put('user', $user);
         }
         return $user;
     }
@@ -51,14 +55,14 @@ class GraphRequest
         $files = $this->graph->createCollectionRequest("GET", '/me/drive/root/children?$select=id,name,folder,fileSystemInfo,size')
             ->setReturnType(Model\DriveItem::class)
             ->execute();
-        if (empty($files))   return '';
+        if (empty($files)) return '';
 
         $stack = ['/:/'];
         $path = '/';
         $data = [];
         while ($key = array_shift($stack)) {
             [$name, $id] = [...explode(':', $key), ''];
-            if ($name !== '/')   $path .= $path === '/' ? $name : '/' . $name;
+            if ($name !== '/') $path .= $path === '/' ? $name : '/' . $name;
             $files = $files ? $files : $this->getFileItems($id);
             foreach ($files as $file) {
                 $tmp = [
@@ -70,19 +74,19 @@ class GraphRequest
                     'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
                     'size' => $file->getSize(),
                 ];
-                if($file->getFolder()){
+                if ($file->getFolder()) {
                     $tmp['folder'] = true;
                     $tmp['children'] = $file->getFolder()->getChildCount();
                 }
                 $data[] = $tmp;
-                if ($tmp['folder'])  array_push($stack, $tmp['name'] . ':' . $tmp['id']);
+                if ($tmp['folder']) array_push($stack, $tmp['name'] . ':' . $tmp['id']);
             }
             $files = null;
         }
 
         Cache::put('/', $data);
 
-        return Cache::get('/');
+        return $data;
     }
 
     private function getFileItems($id)
@@ -119,6 +123,41 @@ class GraphRequest
             ->execute();
         $file = (array)$info;
         return array_pop($file)['@microsoft.graph.downloadUrl'];
+    }
+
+    public function createDirectory($id, $name)
+    {
+        $data = [
+            "name" => $name,
+            "folder" => new StdClass(),
+        ];
+        try {
+            $file = $this->graph->createRequest("POST", "/me/drive/items/{$id}/children")
+                ->attachBody($data)
+                ->setReturnType(Model\DriveItem::class)
+                ->execute();
+            $tmp = [
+                'id' => $file->getId(),
+                'pid' => $id,
+                'name' => $file->getName(),
+                'ctime' => $file->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
+                'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
+                'size' => $file->getSize(),
+                'folder' => true,
+                'children' => 0
+            ];
+            $data = Cache::get('/');
+            array_push($data, $tmp);
+            Cache::put('/', $data);
+            $ret = ['code'=>201, 'msg'=>'创建文件夹成功'];
+        } catch (RequestException $e) {
+            report($e);
+            $code = $e->getCode();
+            preg_match('/\"message\": \"(.*?)\",/', $e->getMessage(), $match);
+            $message = $code===409 ? '文件夹重名，请修改后重试！' : $match[1];
+            $ret = ['code'=>$e->getCode(), 'msg'=>$message];
+        }
+        return $ret;
     }
 
     public function sendMail()
@@ -159,7 +198,6 @@ class GraphRequest
         $subResult = $this->graph->createRequest("POST", "/subscriptions")
             ->attachBody($sub)
             ->setReturnType(Model\Subscription::class)
-
             ->execute();
         return $subResult->getResource();
     }

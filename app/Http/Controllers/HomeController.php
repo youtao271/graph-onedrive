@@ -76,7 +76,7 @@ class HomeController extends Controller
     {
         $graph = new GraphRequest;
         $graph->getFiles();
-        response('Refresh OK');
+        echo 'Refresh OK';
     }
 }
 
