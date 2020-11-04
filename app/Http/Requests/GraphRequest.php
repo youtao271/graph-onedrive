@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
+use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Stream;
-use Illuminate\Http\Request;
 use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model;
@@ -132,24 +132,14 @@ class GraphRequest
             "folder" => new StdClass(),
         ];
         try {
-            $file = $this->graph->createRequest("POST", "/me/drive/items/{$id}/children")
+            $status = $this->graph->createRequest("POST", "/me/drive/items/{$id}/children")
                 ->attachBody($data)
-                ->setReturnType(Model\DriveItem::class)
-                ->execute();
-            $tmp = [
-                'id' => $file->getId(),
-                'pid' => $id==='root' ? 0 : $id,
-                'name' => $file->getName(),
-                'ctime' => $file->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
-                'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
-                'size' => $file->getSize(),
-                'folder' => true,
-                'children' => 0
-            ];
-            $data = Cache::get('/');
-            array_push($data, $tmp);
-            Cache::put('/', $data);
-            $ret = ['code'=>201, 'msg'=>'创建文件夹成功'];
+                ->execute()->getStatus();
+
+            $guzzle = new Client();
+            $guzzle->get(config('app.url').'/refresh')->getStatusCode();
+
+            $ret = ['code'=>$status, 'msg'=>'创建文件夹成功'];
         } catch (RequestException $e) {
             report($e);
             $code = $e->getCode();
