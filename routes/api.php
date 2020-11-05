@@ -26,6 +26,7 @@ Route::middleware('cors')->group(function () {
     Route::get('/content/{id}', 'Api\IndexController@content');
     Route::get('/', 'Api\IndexController@index');
     Route::post('/create', 'Api\IndexController@create');
+    Route::post('/delete', 'Api\IndexController@delete');
     Route::get('/{any}', 'Api\IndexController@index')->where('any', '.*');
 
 });

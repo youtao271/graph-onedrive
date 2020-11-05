@@ -53,6 +53,14 @@ class IndexController extends Controller
         return $this->response(null, $ret['code'], $ret['msg']);
     }
 
+    public function delete(Request $request){
+        $id = $request->input('id');
+        $graph = new GraphRequest;
+        $ret = $graph->deleteItem($id);
+
+        return $this->response(null, $ret['code'], $ret['msg']);
+    }
+
     private function getFile($id)
     {
         $file = array_filter(Cache::get('/'), function ($item) use ($id) {

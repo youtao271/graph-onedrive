@@ -145,7 +145,24 @@ class GraphRequest
             $code = $e->getCode();
             preg_match('/\"message\": \"(.*?)\",/', $e->getMessage(), $match);
             $message = $code===409 ? '文件夹重名，请修改后重试！' : $match[1];
-            $ret = ['code'=>$e->getCode(), 'msg'=>$message];
+            $ret = ['code'=>$code, 'msg'=>$message];
+        }
+        return $ret;
+    }
+
+    public function deleteItem($id){
+        try {
+            $status = $this->graph->createRequest("DELETE", "/me/drive/items/{$id}")->execute()->getStatus();
+
+            $guzzle = new Client();
+            $guzzle->get(config('app.url').'/refresh')->getStatusCode();
+
+            $ret = ['code'=>$status, 'msg'=>'删除项目成功'];
+        } catch (RequestException $e) {
+            report($e);
+            $code = $e->getCode();
+            $message = $e->getMessage();
+            $ret = ['code'=>$code, 'msg'=>$message];
         }
         return $ret;
     }
