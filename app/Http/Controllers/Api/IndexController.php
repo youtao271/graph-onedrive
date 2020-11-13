@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GraphRequest;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -54,15 +55,20 @@ class IndexController extends Controller
     }
 
     public function delete(Request $request){
-        $id = $request->input('id');
+        $ids = $request->input('ids');
         $graph = new GraphRequest;
-        $ret = $graph->deleteItem($id);
+        $ret = [];
+        foreach ($ids as $id){
+            $ret = $graph->deleteItem($id);
+        }
+
+        $guzzle = new Client();
+        $guzzle->get(config('app.url').'/refresh')->getStatusCode();
 
         return $this->response(null, $ret['code'], $ret['msg']);
     }
 
-    private function getFile($id)
-    {
+    private function getFile($id){
         $file = array_filter(Cache::get('/'), function ($item) use ($id) {
             return $item['id'] === $id;
         });

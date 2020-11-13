@@ -153,11 +153,7 @@ class GraphRequest
     public function deleteItem($id){
         try {
             $status = $this->graph->createRequest("DELETE", "/me/drive/items/{$id}")->execute()->getStatus();
-
-            $guzzle = new Client();
-            $guzzle->get(config('app.url').'/refresh')->getStatusCode();
-
-            $ret = ['code'=>$status, 'msg'=>'删除项目成功'];
+            $ret = ['code'=>$status, 'msg'=>'删除文件或文件夹成功'];
         } catch (RequestException $e) {
             report($e);
             $code = $e->getCode();
