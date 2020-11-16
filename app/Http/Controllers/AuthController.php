@@ -125,6 +125,7 @@ class AuthController extends Controller
 
     public function notify(Request $request)
     {
+        Cache::put('validationToken', $request->input('validationToken'));
         /* if ($validationToken = $_GET['validationToken']) {
             Cache::set('validationToken', $validationToken);
         } else {
@@ -132,6 +133,11 @@ class AuthController extends Controller
         } */
         // return response($_REQUEST['validationToken'], 200, ['Content-Type' => 'text/plain']);
         return $request->input('validationToken');
+    }
+
+    public function getValidationToken()
+    {
+        return Cache::get('validationToken');
     }
 
     public function logout()
