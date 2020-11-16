@@ -123,14 +123,15 @@ class AuthController extends Controller
             ->execute();
     }
 
-    public function notify()
+    public function notify(Request $request)
     {
         /* if ($validationToken = $_GET['validationToken']) {
             Cache::set('validationToken', $validationToken);
         } else {
             Cache::set('validationToken', 'validationTokenTest');
         } */
-        return response($_REQUEST['validationToken'], 200, ['Content-Type' => 'text/plain']);
+        // return response($_REQUEST['validationToken'], 200, ['Content-Type' => 'text/plain']);
+        return $request->input('validationToken');
     }
 
     public function logout()
