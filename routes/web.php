@@ -23,6 +23,7 @@ Route::get('/subscribe', 'AuthController@subscribe');
 Route::get('/testSubscribe', 'AuthController@testSubscribe');
 Route::get('/testWebhooks', 'AuthController@testWebhooks');
 Route::post('/notify', 'AuthController@notify');
+Route::get('/getToken', 'AuthController@getValidationToken');
 
 // Route::any('/{any}', 'HomeController@index');
 
