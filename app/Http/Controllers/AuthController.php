@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Tokens\GraphToken;
@@ -98,7 +99,7 @@ class AuthController extends Controller
                 'json' => [
                     'changeType' => 'updated',
                     'notificationUrl' => 'https://pan.9dutv.com/notify',
-                    'resource' => 'me/drive/root',
+                    'resource' => '/drives/me/root',
                     'expirationDateTime' => '2020-11-20T18:23:45.9356913Z',
                     "clientState" => "secretClientValue",
                     "latestSupportedTlsVersion" => "v1_2"
@@ -125,14 +126,16 @@ class AuthController extends Controller
 
     public function notify(Request $request)
     {
-        Cache::put('validationToken', $request->input('validationToken'));
-        /* if ($validationToken = $_GET['validationToken']) {
-            Cache::set('validationToken', $validationToken);
-        } else {
-            Cache::set('validationToken', 'validationTokenTest');
-        } */
-        // return response($_REQUEST['validationToken'], 200, ['Content-Type' => 'text/plain']);
-        return $request->input('validationToken');
+        if($validationToken=$request->input('validationToken')){
+            Cache::put('validationToken', $request->input('validationToken'));
+            return $request->input('validationToken');
+        }
+        if($value = $request->input('value')){
+            Cache::put('notifyValue', $request->input('value'));
+            $guzzle = new Client();
+            $guzzle->get(config('app.url').'/refresh');
+        }
+        return response('Accepted', 202);
     }
 
     public function getValidationToken()

@@ -137,7 +137,7 @@ class GraphRequest
                 ->execute()->getStatus();
 
             $guzzle = new Client();
-            $guzzle->get(config('app.url').'/refresh')->getStatusCode();
+            $guzzle->get(config('app.url').'/refresh');
 
             $ret = ['code'=>$status, 'msg'=>'创建文件夹成功'];
         } catch (RequestException $e) {
