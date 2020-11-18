@@ -68,6 +68,12 @@ class IndexController extends Controller
         return $this->response(null, $ret['code'], $ret['msg']);
     }
 
+    public function upload(Request $request){
+        $id = $request->input('id');
+        $graph = new GraphRequest;
+        return $graph->getUploadScript($id);
+    }
+
     private function getFile($id){
         $file = array_filter(Cache::get('/'), function ($item) use ($id) {
             return $item['id'] === $id;

@@ -163,6 +163,22 @@ class GraphRequest
         return $ret;
     }
 
+    public function getUploadScript($id){
+        try {
+            return $this->graph->createRequest("POST", "/me/drive/items/{$id}:/test.txt:/createUploadSession")
+                ->setReturnType(Model\UploadSession::class)
+                ->execute()->getUploadUrl();
+        } catch (RequestException $e) {
+            report($e);
+            $code = $e->getCode();
+            $message = $e->getMessage();
+            $ret = ['code'=>$code, 'msg'=>$message];
+        } catch (GraphException $e) {
+
+        }
+        return $ret;
+    }
+
     public function sendMail()
     {
         $mailBody = array("Message" => array(
