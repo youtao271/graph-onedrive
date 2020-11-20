@@ -163,9 +163,17 @@ class GraphRequest
         return $ret;
     }
 
-    public function getUploadScript($id){
+    public function getUploadScript($id, $name){
         try {
-            return $this->graph->createRequest("POST", "/me/drive/items/{$id}:/test.txt:/createUploadSession")
+            return $this->graph->createRequest("POST", "/me/drive/items/{$id}:/{$name}:/createUploadSession")
+                ->addHeaders(["Content-Type" => "application/json"])
+                ->attachBody([
+                        "@microsoft.graph.conflictBehavior" => "rename",
+                        "description"    => 'File description here',
+                        "name"    => $name,
+                        // "fileSize"    => $size,
+                        // "DeferCommit" => true
+                ])
                 ->setReturnType(Model\UploadSession::class)
                 ->execute()->getUploadUrl();
         } catch (RequestException $e) {
