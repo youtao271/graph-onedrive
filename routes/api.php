@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 // Route::any('{any}', 'Api\IndexController@index')->where('any', '.*')->name('react');
 // Route::get('/all', 'Api\IndexController@all');
 
-Route::middleware('cors')->group(function () {
+// Route::middleware('cors')->group(function () {
 
     Route::get('/content/{id}', 'Api\IndexController@content');
     Route::get('/', 'Api\IndexController@index');
@@ -30,5 +30,5 @@ Route::middleware('cors')->group(function () {
     Route::post('/delete', 'Api\IndexController@delete');
     Route::get('/{any}', 'Api\IndexController@index')->where('any', '.*');
 
-});
+// });
 
