@@ -163,7 +163,7 @@ class GraphRequest
         return $ret;
     }
 
-    public function getUploadScript($id, $name){
+    public function getUploadScript($id, $name, $size){
         try {
             return $this->graph->createRequest("POST", "/me/drive/items/{$id}:/{$name}:/createUploadSession")
                 ->addHeaders(["Content-Type" => "application/json"])
@@ -171,7 +171,7 @@ class GraphRequest
                         "@microsoft.graph.conflictBehavior" => "rename",
                         "description"    => 'File description here',
                         "name"    => $name,
-                        // "fileSize"    => $size,
+                        "fileSize"    => $size,
                         // "DeferCommit" => true
                 ])
                 ->setReturnType(Model\UploadSession::class)

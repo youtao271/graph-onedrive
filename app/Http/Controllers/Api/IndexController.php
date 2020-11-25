@@ -71,8 +71,9 @@ class IndexController extends Controller
     public function upload(Request $request){
         $id = $request->input('id');
         $name = $request->input('name');
+        $size = $request->input('size');
         $graph = new GraphRequest;
-        $ret = $graph->getUploadScript($id, $name);
+        $ret = $graph->getUploadScript($id, $name, $size);
         return $this->response($ret);
     }
 
