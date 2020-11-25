@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/content/{id}', 'Api\IndexController@content');
     Route::get('/', 'Api\IndexController@index');
     // Route::post('/create', 'Api\IndexController@create');
-    Route::post('/create', function (Request $request){
+    Route::match(['post', 'options'],'/create', function (Request $request){
         return response($request->all());
     });
     Route::post('/upload', 'Api\IndexController@upload');
