@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get('/test', 'HomeController@test');
+Route::get('/store', 'HomeController@store');
+Route::get('/welcome', 'HomeController@welcome');
 Route::get('/refresh', 'HomeController@refresh');
 Route::get('/login', 'AuthController@login');
 Route::get('/callback', 'AuthController@callback');

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -14,7 +13,7 @@ use App\Http\Requests\GraphRequest;
 class AuthController extends Controller
 {
 
-    private $authHandle;
+    private GraphToken $authHandle;
 
     public function __construct()
     {
@@ -35,7 +34,7 @@ class AuthController extends Controller
         $authUrl = $this->authHandle->getAuthorizationUrl();
         //var_dump($authUrl);exit;
 
-        Cache::set('oauthState', $this->authHandle->getState());
+        Cache::put('oauthState', $this->authHandle->getState());
 
         return redirect()->away($authUrl);
     }

@@ -11,26 +11,37 @@ use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
-    public function welcome()
+    public function index()
     {
 
-        $accessToken = Cache::get('accessToken');
-        $user = Cache::get('user');
+        return view('pan/index');
 
-        // var_dump(time());
-        // var_dump($accessToken);
-        // var_dump($accessToken->getRefreshToken());
-        // var_dump($accessToken->hasExpired());
-
-        $graph = new GraphRequest;
-        $roots = $graph->getFiles();
-
-        var_dump(Cache::get('/'));
-        var_dump(Cache::get('test'));
-        var_dump(Cache::get('课件'));
     }
 
-    public function index($path = '/')
+    public function store()
+    {
+        $graph = new GraphRequest;
+        $graph->storeFile();
+        echo 'Stored';
+    }
+
+    public function test()
+    {
+        $id = 'root';
+        $data = [];
+        $this->getItems($id, $data);
+        var_dump($data);
+    }
+
+    private function getItems($id, &$data){
+        $files = Cache::get($id);
+        foreach ($files as $file){
+            array_push($data, $file);
+            if($file['folder'] && $file['children'])   $this->getItems($file['id'], $data);
+        }
+    }
+
+    public function welcome($path = '/')
     {
         if ($path === '/')   $this->root();
 

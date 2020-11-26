@@ -45,7 +45,7 @@ class GraphRequest
             $user = $this->graph->createRequest('GET', '/me')
                 ->setReturnType(Model\User::class)
                 ->execute();
-            Cache::put('user', $user);
+            Cache::forever('user', $user);
         }
         return $user;
     }
@@ -84,12 +84,41 @@ class GraphRequest
             $files = null;
         }
 
-        Cache::put('/', $data);
+        Cache::forever('/', $data);
 
         return $data;
     }
 
-    private function getFileItems($id)
+    public function storeFile($id='root', $flag=false)
+    {
+        $files = $this->getFileItems($id);
+        $data = [];
+        foreach ($files as $file) {
+            $tmp = [
+                'id' => $file->getId(),
+                'pid' => $id === '/' ? 0 : $id,
+                'name' => $file->getName(),
+                'folder' => $file->getFolder() ? $file->getFolder()->getChildCount() : 0,
+                'ctime' => $file->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
+                'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
+                'size' => $file->getSize(),
+            ];
+            if ($file->getFolder()) {
+                $tmp['folder'] = true;
+                $tmp['children'] = $file->getFolder()->getChildCount();
+                var_dump($tmp['name']. '-----' .$tmp['id']);
+                ob_flush();
+                flush();
+                if($tmp['children'] && $flag) {
+                    $this->storeFile($tmp['id']);
+                }
+            }
+            array_push($data, $tmp);
+        }
+        Cache::forever($id, $data);
+    }
+
+    public function getFileItems($id='root')
     {
         $items = $this->graph->createCollectionRequest("GET", "/drives/me/items/{$id}/children")
             ->setReturnType(Model\DriveItem::class)

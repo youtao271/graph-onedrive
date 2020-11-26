@@ -13,19 +13,20 @@ use Illuminate\Support\Facades\Cache;
 class IndexController extends Controller
 {
 
-    public function index($path = '/')
+    public function index(Request $request)
     {
-        if ($path === '/' || $path === 'all') {
-            return $this->response(Cache::get('/'));
+        $id = $request->input('id', 'root');
+        $data = [];
+        $this->getItems($id, $data);
+        return $this->response($data);
+    }
+
+    private function getItems($id, &$data){
+        $files = Cache::get($id);
+        foreach ($files as $file){
+            array_push($data, $file);
+            if($file['folder'] && $file['children'])   $this->getItems($file['id'], $data);
         }
-
-        $file = $this->getFile($path);
-
-        if (!$file) return $this->response('', '404', '文件不存在');
-
-        if (!$file['folder']) return $this->response($file);
-
-        return $this->response($this->getFileList($path));
     }
 
     public function content($id)
