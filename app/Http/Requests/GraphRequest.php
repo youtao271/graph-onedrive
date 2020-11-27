@@ -4,17 +4,18 @@ namespace App\Http\Requests;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Stream;
-use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Tokens\GraphToken;
 use stdClass;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ClientException;
+use Microsoft\Graph\Exception\GraphException;
 
 class GraphRequest
 {
-    private $graph;
+    private Graph $graph;
     private $token;
 
     public function __construct()
@@ -128,7 +129,6 @@ class GraphRequest
 
     public function getFileContent($id)
     {
-
         return $this->graph->createRequest("GET", "/me/drive/items/{$id}/content")
             ->setReturnType(Stream::class)
             ->execute()->getContents();
@@ -136,7 +136,6 @@ class GraphRequest
 
     public function downloadFile($id)
     {
-
         $info = $this->graph->createRequest("GET", "/me/drive/items/{$id}/?\$select=@microsoft.graph.downloadUrl")
             ->setReturnType(Model\DriveItem::class)
             ->execute();
@@ -146,7 +145,6 @@ class GraphRequest
 
     public function getFileUrl($id)
     {
-
         $info = $this->graph->createRequest("GET", "/me/drive/items/{$id}/?\$select=@microsoft.graph.downloadUrl")
             ->setReturnType(Model\DriveItem::class)
             ->execute();
@@ -175,6 +173,7 @@ class GraphRequest
             preg_match('/\"message\": \"(.*?)\",/', $e->getMessage(), $match);
             $message = $code===409 ? '文件夹重名，请修改后重试！' : $match[1];
             $ret = ['code'=>$code, 'msg'=>$message];
+        } catch (GraphException $e) {
         }
         return $ret;
     }
@@ -188,6 +187,7 @@ class GraphRequest
             $code = $e->getCode();
             $message = $e->getMessage();
             $ret = ['code'=>$code, 'msg'=>$message];
+        } catch (GraphException $e) {
         }
         return $ret;
     }
@@ -214,6 +214,63 @@ class GraphRequest
 
         }
         return $ret;
+    }
+
+    //创建订阅
+    public function subscribe(){
+        try {
+            return $this->graph->createRequest("POST", "/subscriptions")
+                ->addHeaders(["Content-Type" => "application/json"])
+                ->attachBody([
+                    'changeType' => 'updated',
+                    'notificationUrl' => 'https://pan.9dutv.com/notify',
+                    'resource' => '/drives/me/root',
+                    'expirationDateTime' => '2020-12-30T18:23:45.9356913Z',
+                    "clientState" => "secretClientValue",
+                    "latestSupportedTlsVersion" => "v1_2"
+                ])
+                ->setReturnType(Model\Subscription::class)
+                ->execute();
+        } catch (GraphException $e) {
+        }
+    }
+    //续订
+    public function resubscribe($id, $date){
+        try {
+            return $this->graph->createRequest("PATCH", "/subscriptions/{$id}")
+                ->setReturnType(Model\Subscription::class)
+                ->attachBody([
+                    'expirationDateTime' => $date,
+                ])
+                ->execute();
+        } catch (ClientException $e) {
+            $res = $e->getResponse()->getBody()->getContents();
+            $res = json_decode($res, true);
+            $message = $res['error']['message'];
+            return response($message, $e->getCode());
+        } catch (GraphException $e) {
+        }
+    }
+
+    //获取订阅列表
+    public function getSubscriptions(){
+        try {
+            return $this->graph->createRequest("GET", "/subscriptions")
+                ->setReturnType(Model\Subscription::class)
+                ->execute();
+        } catch (GraphException $e) {
+
+        }
+    }
+
+    //获取订阅详情
+    public function getSubscriptionInfo($id){
+        try {
+            return $this->graph->createRequest("GET", "/subscriptions/{$id}")
+                ->setReturnType(Model\Subscription::class)
+                ->execute();
+        } catch (GraphException $e) {
+        }
     }
 
     public function sendMail()
@@ -247,14 +304,5 @@ class GraphRequest
         } catch (League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
             var_dump($e->getMessage());
         }
-    }
-
-    public function webhooks($sub)
-    {
-        $subResult = $this->graph->createRequest("POST", "/subscriptions")
-            ->attachBody($sub)
-            ->setReturnType(Model\Subscription::class)
-            ->execute();
-        return $subResult->getResource();
     }
 }

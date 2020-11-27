@@ -21,16 +21,37 @@ class HomeController extends Controller
     public function store()
     {
         $graph = new GraphRequest;
-        $graph->storeFile();
+        $graph->storeFile('root', true);
         echo 'Stored';
     }
 
     public function test()
     {
+        var_dump(![]);
+        $graph = new GraphRequest;
+        // var_dump($graph->subscribe());exit;
+        var_dump($graph->resubscribe('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
+        var_dump($graph->getSubscriptions());
+        var_dump($graph->getSubscriptionInfo('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
         $id = 'root';
         $data = [];
         $this->getItems($id, $data);
         var_dump($data);
+    }
+
+    public function resubscribe(){
+        $date = date('c', strtotime('+ 30 day'));
+        $graph = new GraphRequest;
+        $subscriptions = $graph->getSubscriptions();
+        if(!$subscriptions) return false;
+        foreach ($subscriptions as $subscription){
+            $id = $subscription->getId();
+            $ret = $graph->resubscribe($id, $date);
+            var_dump($id);
+            var_dump($ret);
+            var_dump($ret->getExpirationDateTime()->format('c'));
+            ob_flush();
+        }
     }
 
     private function getItems($id, &$data){

@@ -74,55 +74,6 @@ class AuthController extends Controller
             ->with('errorDetail', $request->query('error_description'));
     }
 
-    public function testSubscribe()
-    {
-        var_dump(config('services.graph.notificationUrl'));
-        var_dump(Cache::get('validationToken'));
-    }
-    public function subscribe()
-    {
-        $guzzle = new \GuzzleHttp\Client();
-        $url = 'https://login.microsoftonline.com/common/oauth2/token?api-version=1.0';
-
-        $GraphRequest = new GraphRequest;
-        $accessToken = $GraphRequest->getToken();
-
-        $url = 'https://graph.microsoft.com/v1.0/subscriptions';
-        // var_dump(config('services.graph.notificationUrl'));exit;
-
-        try {
-            $res = json_decode($guzzle->post($url, [
-                'headers' => [
-                    'authorization' => 'Bearer ' . $accessToken
-                ],
-                'json' => [
-                    'changeType' => 'updated',
-                    'notificationUrl' => 'https://pan.9dutv.com/notify',
-                    'resource' => '/drives/me/root',
-                    'expirationDateTime' => '2020-11-20T18:23:45.9356913Z',
-                    "clientState" => "secretClientValue",
-                    "latestSupportedTlsVersion" => "v1_2"
-                ],
-            ])->getBody()->getContents());
-            var_dump($res);exit;
-        } catch (\Exception $e) {
-            var_dump($e->getMessage());
-        }
-
-
-
-
-        var_dump($accessToken);
-        exit;
-
-        $graph = new Graph();
-        $graph->setAccessToken($token);
-
-        $user = $graph->createRequest('GET', '/me')
-            ->setReturnType(Model\User::class)
-            ->execute();
-    }
-
     public function notify(Request $request)
     {
         if($validationToken=$request->input('validationToken')){
@@ -148,20 +99,4 @@ class AuthController extends Controller
         return redirect('/');
     }
 
-
-    public function testWebhooks()
-    {
-        $sub = new Model\Subscription();
-        $sub->setChangeType("updated");
-        $sub->setNotificationUrl("https://pan.9dutv.com/notify");
-        $sub->setResource("/me/drive/root");
-        $time = new \DateTime();
-        $time->add(new \DateInterval("PT1H"));
-        $sub->setExpirationDateTime($time);
-
-        $GraphRequest = new GraphRequest;
-        $res = $GraphRequest->webhooks($sub);
-
-        var_dump($res);
-    }
 }

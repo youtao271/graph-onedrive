@@ -1,7 +1,4 @@
 <?php
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
