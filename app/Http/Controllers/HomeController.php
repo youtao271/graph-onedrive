@@ -1,12 +1,8 @@
 <?php
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\GraphRequest;
-use App\TokenStore\TokenCache;
 use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
