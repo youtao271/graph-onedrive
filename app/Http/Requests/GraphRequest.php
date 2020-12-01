@@ -212,6 +212,10 @@ class GraphRequest
             $message = $e->getMessage();
             $ret = ['code'=>$code, 'msg'=>$message];
         }
+        if($ret['code'] === 404) {
+            $this->deleteCache($item);
+            $ret['msg'] = '文件或文件夹已删除，缓存更新成功！';
+        }
         return $ret;
     }
 
