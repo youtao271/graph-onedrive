@@ -181,6 +181,7 @@ class GraphRequest
     public function deleteItem($id){
         try {
             $status = $this->graph->createRequest("DELETE", "/me/drive/items/{$id}")->execute()->getStatus();
+            Cache::put('deleteValue', now(), 600);
             $ret = ['code'=>$status, 'msg'=>'删除文件或文件夹成功'];
         } catch (RequestException $e) {
             report($e);

@@ -77,13 +77,13 @@ class AuthController extends Controller
     public function notify(Request $request)
     {
         if($validationToken=$request->input('validationToken')){
-            Cache::put('validationToken', $request->input('validationToken'));
+            Cache::put('validationToken', $request->input('validationToken'), 600);
             return $request->input('validationToken');
         }
         if($value = $request->input('value')){
-            Cache::put('notifyValue', $request->input('value'));
-            $guzzle = new Client();
-            $guzzle->get(config('app.url').'/refresh');
+            Cache::put('notifyValue', $request->input('value'), 600);
+            // $guzzle = new Client();
+            // $guzzle->get(config('app.url').'/refresh');
         }
         return response('Accepted', 202);
     }
