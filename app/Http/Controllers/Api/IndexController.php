@@ -34,7 +34,7 @@ class IndexController extends Controller
         $graph->storeFile($id, $flag);
 
         $data = [];
-        $this->getItems($id, $data);
+        $this->getItems('root', $data);
         return $this->response($data);
     }
 
