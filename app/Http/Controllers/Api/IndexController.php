@@ -60,8 +60,8 @@ class IndexController extends Controller
             $ret = $graph->deleteItem($id);
         }
 
-        $guzzle = new Client();
-        $guzzle->get(config('app.url').'/refresh')->getStatusCode();
+        // $guzzle = new Client();
+        // $guzzle->get(config('app.url').'/refresh')->getStatusCode();
 
         return $this->response(null, $ret['code'], $ret['msg']);
     }
