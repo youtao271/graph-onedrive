@@ -174,21 +174,43 @@ class GraphRequest
             $message = $code===409 ? '文件夹重名，请修改后重试！' : $match[1];
             $ret = ['code'=>$code, 'msg'=>$message];
         } catch (GraphException $e) {
+            // Todo
         }
         return $ret;
     }
 
-    public function deleteItem($id){
+    private function deleteCache($item){
+        Cache::forget($item['id']);
+        $parent = Cache::get($item['pid']);
+        foreach ($parent as $key => $val){
+            if($val['id'] === $item['id']) {
+                unset($parent[$key]);
+                break;
+            }
+        }
+        Cache::forever($item['pid'], $parent);
+    }
+
+    public function deleteItem($item){
         try {
-            $status = $this->graph->createRequest("DELETE", "/me/drive/items/{$id}")->execute()->getStatus();
-            Cache::put('deleteValue', now(), 600);
-            $ret = ['code'=>$status, 'msg'=>'删除文件或文件夹成功'];
+            $status = $this->graph->createRequest("DELETE", "/me/drive/items/{$item['id']}")->execute()->getStatus();
+            $msg = '删除失败，请稍后重试！';
+            if($status === 204){
+                $msg = '删除文件或文件夹成功!';
+                $this->deleteCache($item);
+            }
+            $ret = ['code'=>$status, 'msg'=>$msg];
         } catch (RequestException $e) {
             report($e);
             $code = $e->getCode();
             $message = $e->getMessage();
             $ret = ['code'=>$code, 'msg'=>$message];
         } catch (GraphException $e) {
+            // Todo
+            report($e);
+            $code = $e->getCode();
+            $message = $e->getMessage();
+            $ret = ['code'=>$code, 'msg'=>$message];
         }
         return $ret;
     }

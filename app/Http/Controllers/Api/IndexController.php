@@ -53,15 +53,12 @@ class IndexController extends Controller
     }
 
     public function delete(Request $request){
-        $ids = $request->input('ids');
+        $data = $request->input('data');
         $graph = new GraphRequest;
         $ret = [];
-        foreach ($ids as $id){
-            $ret = $graph->deleteItem($id);
+        foreach ($data as $item){
+            $ret = $graph->deleteItem($item);
         }
-
-        // $guzzle = new Client();
-        // $guzzle->get(config('app.url').'/refresh')->getStatusCode();
 
         return $this->response(null, $ret['code'], $ret['msg']);
     }
