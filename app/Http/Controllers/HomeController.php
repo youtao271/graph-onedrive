@@ -23,8 +23,14 @@ class HomeController extends Controller
 
     public function test()
     {
-        var_dump(Cache::get('deleteValue'));
-        var_dump(Cache::get('notifyValue'));
+        // var_dump(Cache::get('deleteValue'));
+        // var_dump(Cache::get('notifyValue'));
+        $ret = [
+            'code' => '200',
+            'msg' => 'test',
+            'data' => [Cache::get('deleteValue'), Cache::get('notifyValue')]
+        ];
+        return response()->json($ret);
         $graph = new GraphRequest;
         // var_dump($graph->subscribe());exit;
         // var_dump($graph->resubscribe('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
