@@ -26,6 +26,18 @@ class IndexController extends Controller
         }
     }
 
+    public function update(Request $request)
+    {
+        $id = $request->input('id', 'root');
+        $flag = !!$request->input('flag', false);
+        $graph = new GraphRequest;
+        $graph->storeFile($id, $flag);
+
+        $data = [];
+        $this->getItems($id, $data);
+        return $this->response($data);
+    }
+
     public function content($id)
     {
         $file = $this->getFile($id);

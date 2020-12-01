@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\GraphRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
@@ -14,10 +15,12 @@ class HomeController extends Controller
 
     }
 
-    public function store()
+    public function update(Request $request)
     {
+        $id = $request->input('id', 'root');
+        $flag = !!$request->input('flag', false);
         $graph = new GraphRequest;
-        $graph->storeFile('root', true);
+        $graph->storeFile($id, $flag);
         echo 'Stored';
     }
 
