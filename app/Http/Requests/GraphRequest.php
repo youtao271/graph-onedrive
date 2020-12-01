@@ -108,8 +108,8 @@ class GraphRequest
                 $tmp['folder'] = true;
                 $tmp['children'] = $file->getFolder()->getChildCount();
                 var_dump($tmp['name']. '-----' .$tmp['id']. '-----' .$tmp['children']);
-                ob_flush();
-                flush();
+                // ob_flush();
+                // flush();
                 if($tmp['children'] && $flag) {
                     $this->storeFile($tmp['id'], $flag);
                 }
