@@ -24,25 +24,38 @@ class HomeController extends Controller
         echo 'Stored';
     }
 
+    public function download(Request $request){
+        $id = $request->input('id', '');
+        if(!$id)    return false;
+
+        $graph = new GraphRequest();
+        $url = $graph->getFileUrl($id);
+
+        return redirect()->away($url);
+    }
+
     public function test()
     {
-        // var_dump(Cache::get('deleteValue'));
-        // var_dump(Cache::get('notifyValue'));
-        $ret = [
-            'code' => '200',
-            'msg' => 'test',
-            'data' => [Cache::get('deleteValue'), Cache::get('notifyValue')]
-        ];
-        return response()->json($ret);
-        $graph = new GraphRequest;
+        // $graph = new GraphRequest;
         // var_dump($graph->subscribe());exit;
         // var_dump($graph->resubscribe('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
-        var_dump($graph->getSubscriptions());
-        var_dump($graph->getSubscriptionInfo('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
+        // var_dump($graph->getSubscriptions());
+        // var_dump($graph->getSubscriptionInfo('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
         $id = 'root';
-        $data = [];
-        $this->getItems($id, $data);
+        $data = $this->getItems($id);
         var_dump($data);
+    }
+
+    private function getItems($id){
+        $data = [];
+        $files = Cache::get($id);
+        foreach ($files as $file){
+            array_push($data, $file);
+            if($file['folder'] && $file['children']) {
+                array_push($data, ...$this->getItems($file['id']));
+            }
+        }
+        return $data;
     }
 
     public function resubscribe(){
@@ -57,14 +70,6 @@ class HomeController extends Controller
             var_dump($ret);
             var_dump($ret->getExpirationDateTime()->format('c'));
             ob_flush();
-        }
-    }
-
-    private function getItems($id, &$data){
-        $files = Cache::get($id);
-        foreach ($files as $file){
-            array_push($data, $file);
-            if($file['folder'] && $file['children'])   $this->getItems($file['id'], $data);
         }
     }
 

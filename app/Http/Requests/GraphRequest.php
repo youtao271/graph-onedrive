@@ -99,17 +99,13 @@ class GraphRequest
                 'id' => $file->getId(),
                 'pid' => $id === '/' ? 0 : $id,
                 'name' => $file->getName(),
-                'folder' => $file->getFolder() ? $file->getFolder()->getChildCount() : 0,
+                'folder' => !!$file->getFolder(),
                 'ctime' => $file->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
                 'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
                 'size' => $file->getSize(),
             ];
-            if ($file->getFolder()) {
-                $tmp['folder'] = true;
+            if ($tmp['folder']) {
                 $tmp['children'] = $file->getFolder()->getChildCount();
-                var_dump($tmp['name']. '-----' .$tmp['id']. '-----' .$tmp['children']);
-                // ob_flush();
-                // flush();
                 if($tmp['children'] && $flag) {
                     $this->storeFile($tmp['id'], $flag);
                 }
@@ -132,6 +128,11 @@ class GraphRequest
         return $this->graph->createRequest("GET", "/me/drive/items/{$id}/content")
             ->setReturnType(Stream::class)
             ->execute()->getContents();
+    }
+
+    public function download($id)
+    {
+        return $this->graph->createRequest("GET", "/me/drive/items/{$id}/content")->execute();
     }
 
     public function downloadFile($id)
@@ -159,14 +160,26 @@ class GraphRequest
             "folder" => new StdClass(),
         ];
         try {
-            $status = $this->graph->createRequest("POST", "/me/drive/items/{$id}/children")
+            $result = $this->graph->createRequest("POST", "/me/drive/items/{$id}/children")
                 ->attachBody($data)
-                ->execute()->getStatus();
+                ->setReturnType(Model\DriveItem::class)
+                ->execute();
 
-            $guzzle = new Client();
-            $guzzle->get(config('app.url').'/refresh');
+            $file = [
+                'id' => $result->getId(),
+                'pid' => $id,
+                'name' => $result->getName(),
+                'folder' => true,
+                'children' => 0,
+                'ctime' => $result->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
+                'mtime' => $result->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
+                'size' => $result->getSize(),
+            ];
+            $parent = Cache::get($id);
+            array_push($parent, $file);
+            Cache::forever($id, $parent);
 
-            $ret = ['code'=>$status, 'msg'=>'创建文件夹成功'];
+            $ret = ['code'=>201, 'msg'=>'创建文件夹成功'];
         } catch (RequestException $e) {
             report($e);
             $code = $e->getCode();

@@ -13,17 +13,20 @@ class IndexController extends Controller
     public function index(Request $request)
     {
         $id = $request->input('id', 'root');
-        $data = [];
-        $this->getItems($id, $data);
+        $data = $this->getItems($id);
         return $this->response($data);
     }
 
-    private function getItems($id, &$data){
+    private function getItems($id){
+        $data = [];
         $files = Cache::get($id);
         foreach ($files as $file){
             array_push($data, $file);
-            if($file['folder'] && $file['children'])   $this->getItems($file['id'], $data);
+            if($file['folder'] && $file['children']) {
+                array_push($data, ...$this->getItems($file['id']));
+            }
         }
+        return $data;
     }
 
     public function update(Request $request)
@@ -33,9 +36,7 @@ class IndexController extends Controller
         $graph = new GraphRequest;
         $graph->storeFile($id, $flag);
 
-        $data = [];
-        $this->getItems('root', $data);
-        return $this->response($data);
+        return $this->response($this->getItems('root'));
     }
 
     public function content($id)
@@ -55,13 +56,22 @@ class IndexController extends Controller
         return $this->response(['type'=>$fileType, 'data'=>$content]);
     }
 
+    public function download(Request $request){
+        $id = $request->input('id', '');
+        if(!$id)    return $this->response(null, '404', '文件不存在');
+
+        $graph = new GraphRequest();
+        $url = $graph->getFileUrl($id);
+        return $this->response($url);
+    }
+
     public function create(Request $request){
         $id = $request->input('id');
         $name = $request->input('name');
         $graph = new GraphRequest;
         $ret = $graph->createDirectory($id, $name);
 
-        return $this->response(null, $ret['code'], $ret['msg']);
+        return $this->response($this->getItems('root'), $ret['code'], $ret['msg']);
     }
 
     public function delete(Request $request){
@@ -72,7 +82,7 @@ class IndexController extends Controller
             $ret = $graph->deleteItem($item);
         }
 
-        return $this->response(null, $ret['code'], $ret['msg']);
+        return $this->response($this->getItems('root'), $ret['code'], $ret['msg']);
     }
 
     public function upload(Request $request){
