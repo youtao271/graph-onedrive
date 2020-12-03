@@ -11,6 +11,7 @@ use App\Http\Tokens\GraphToken;
 use stdClass;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ServerException;
 use Microsoft\Graph\Exception\GraphException;
 
 class GraphRequest
@@ -104,6 +105,9 @@ class GraphRequest
                 'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
                 'size' => $file->getSize(),
             ];
+            if(!!$file->getThumbnails()){
+                $tmp['thumbnails'] = $file->getThumbnails()[0]['small']['url'];
+            }
             if ($tmp['folder']) {
                 $tmp['children'] = $file->getFolder()->getChildCount();
                 if($tmp['children'] && $flag) {
@@ -117,9 +121,14 @@ class GraphRequest
 
     public function getFileItems($id='root')
     {
-        $items = $this->graph->createCollectionRequest("GET", "/drives/me/items/{$id}/children")
-            ->setReturnType(Model\DriveItem::class)
-            ->execute();
+        try {
+            $items = $this->graph->createCollectionRequest("GET", "/drives/me/items/{$id}/children?\$expand=thumbnails")
+                ->setReturnType(Model\DriveItem::class)
+                ->execute();
+        } catch (ClientException $e) {
+            $res = $e->getResponse()->getBody()->getContents();
+            var_dump($res);exit;
+        }
         return $items;
     }
 
@@ -128,6 +137,13 @@ class GraphRequest
         return $this->graph->createRequest("GET", "/me/drive/items/{$id}/content")
             ->setReturnType(Stream::class)
             ->execute()->getContents();
+    }
+
+    public function getFileThumbnail($id)
+    {
+        return $this->graph->createRequest("GET", "/me/drive/items/{$id}/thumbnails")
+            ->setReturnType(Model\Thumbnail::class)
+            ->execute();
     }
 
     public function download($id)

@@ -36,14 +36,17 @@ class HomeController extends Controller
 
     public function test()
     {
-        // $graph = new GraphRequest;
+        $graph = new GraphRequest;
+        $thumbnail = $graph->getFileThumbnail('01WQGIH6VLFYBWZQV22ZA3VKBX24TNJW6S');
+        var_dump($thumbnail);
+
+        $id = 'root';
+        $data = $this->getItems($id);
+        var_dump($data);
         // var_dump($graph->subscribe());exit;
         // var_dump($graph->resubscribe('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
         // var_dump($graph->getSubscriptions());
         // var_dump($graph->getSubscriptionInfo('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
-        $id = 'root';
-        $data = $this->getItems($id);
-        var_dump($data);
     }
 
     private function getItems($id){
