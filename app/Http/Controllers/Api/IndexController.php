@@ -1,9 +1,9 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GraphRequest;
-use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -14,15 +14,16 @@ class IndexController extends Controller
     {
         $id = $request->input('id', 'root');
         $data = $this->getItems($id);
-        return $this->response($data);
+        return response($data);
     }
 
-    private function getItems($id){
+    private function getItems($id)
+    {
         $data = [];
         $files = Cache::get($id);
-        foreach ($files as $file){
+        foreach ($files as $file) {
             array_push($data, $file);
-            if($file['folder'] && $file['children']) {
+            if ($file['folder'] && $file['children']) {
                 array_push($data, ...$this->getItems($file['id']));
             }
         }
@@ -36,16 +37,18 @@ class IndexController extends Controller
         $graph = new GraphRequest;
         $graph->storeFile($id, $flag);
 
-        return $this->response($this->getItems('root'));
+        return response($this->getItems('root'));
     }
 
-    public function content($id)
+    public function content(Request $request)
     {
-        $file = $this->getFile($id);
+        $id = $request->input('id');
+        $pid = $request->input('pid', 'root');
+        $file = $this->getFile($id, $pid);
 
-        if (!$file) return $this->response('', '404', '文件不存在');
+        if (!$file) return response('文件不存在', '404');
 
-        if ($file['folder']) return $this->response('', '403', '这是一个文件夹');
+        if ($file['folder']) return response('这是一个文件夹', '403');
 
         $fileType = $this->getFileType($file['name']);
         $content = Cache::get($id);
@@ -53,67 +56,74 @@ class IndexController extends Controller
             $content = $this->getFileContent($id, $fileType);
         }
 
-        return $this->response(['type'=>$fileType, 'data'=>$content]);
+        return response(['type' => $fileType, 'data' => $content]);
     }
 
-    public function download(Request $request){
+    public function download(Request $request)
+    {
         $id = $request->input('id', '');
-        if(!$id)    return $this->response(null, '404', '文件不存在');
+        if (!$id) return response('文件不存在', '404');
 
         $graph = new GraphRequest();
         $url = $graph->getFileUrl($id);
-        return $this->response($url);
+        return response($url);
     }
 
-    public function create(Request $request){
+    public function create(Request $request)
+    {
         $id = $request->input('id');
         $name = $request->input('name');
         $graph = new GraphRequest;
         $ret = $graph->createDirectory($id, $name);
+        $data = [
+            'msg' => '创建文件夹成功',
+            'data' => $this->getItems('root')
+        ];
 
-        return $this->response($this->getItems('root'), $ret['code'], $ret['msg']);
+        return response($data, $ret);
     }
 
-    public function delete(Request $request){
+    public function delete(Request $request)
+    {
         $data = $request->input('data');
         $graph = new GraphRequest;
-        $ret = [];
-        foreach ($data as $item){
+        $ret = 200;
+        foreach ($data as $item) {
             $ret = $graph->deleteItem($item);
         }
+        $ret = $ret===204 ? 200 : $ret;
+        $data = [
+            'msg' => '删除文件或文件夹成功',
+            'data' => $this->getItems('root')
+        ];
 
-        return $this->response($this->getItems('root'), $ret['code'], $ret['msg']);
+        return response($data, $ret);
     }
 
-    public function upload(Request $request){
+    public function upload(Request $request)
+    {
         $id = $request->input('id');
         $name = $request->input('name');
         $size = $request->input('size');
         $graph = new GraphRequest;
         $ret = $graph->getUploadScript($id, $name, $size);
-        return $this->response($ret);
+        return response($ret);
     }
 
-    private function getFile($id){
-        $file = array_filter(Cache::get('/'), function ($item) use ($id) {
+    private function getFile($id, $pid)
+    {
+        $files = array_filter(Cache::get($pid), function ($item) use ($id) {
             return $item['id'] === $id;
         });
-        return array_pop($file);
-    }
-
-    private function getFileList($id)
-    {
-        return array_filter(Cache::get('/'), function ($item) use ($id) {
-            return $item['pid'] === $id;
-        });
+        return array_pop($files);
     }
 
     private function getFileType($name)
     {
         $fileExt = pathinfo($name, PATHINFO_EXTENSION);
         $fileType = '';
-        foreach (config('ext') as $key => $ext){
-            if(in_array($fileExt, $ext)){
+        foreach (config('ext') as $key => $ext) {
+            if (in_array($fileExt, $ext)) {
                 $fileType = $key;
                 break;
             }
@@ -121,36 +131,29 @@ class IndexController extends Controller
         return $fileType;
     }
 
-    private function getFileContent($id, $type){
-        if($type === 'code' || $type === 'md'){
+    private function getFileContent($id, $type)
+    {
+        if ($type === 'code' || $type === 'md') {
             $ret = $this->getCodeContent($id);
-        }else{
+        } else {
             $ret = $this->getFileUrl($id);
         }
         return $ret;
     }
 
-    private function getCodeContent($id){
+    private function getCodeContent($id)
+    {
         $graph = new GraphRequest;
         $content = $graph->getFileContent($id);
         Cache::put($id, $content, 5 * 60);
         return $content;
     }
 
-    private function getFileUrl($id){
+    private function getFileUrl($id)
+    {
         $graph = new GraphRequest;
         $url = $graph->getFileUrl($id);
         Cache::add($id, $url, 5 * 60);
         return $url;
-    }
-
-    private function response($data = null, $code = '200', $msg = '加载成功')
-    {
-        $ret = [
-            'code' => $code,
-            'msg' => $msg,
-        ];
-        if ($data) $ret['data'] = $data;
-        return response()->json($ret);
     }
 }

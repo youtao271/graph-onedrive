@@ -3,16 +3,13 @@
 namespace App\Http\Requests;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Stream;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Tokens\GraphToken;
 use stdClass;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Exception\ServerException;
-use Microsoft\Graph\Exception\GraphException;
 
 class GraphRequest
 {
@@ -91,7 +88,7 @@ class GraphRequest
         return $data;
     }
 
-    public function storeFile($id='root', $flag=false)
+    public function storeFile($id = 'root', $flag = false)
     {
         $files = $this->getFileItems($id);
         $data = [];
@@ -105,12 +102,12 @@ class GraphRequest
                 'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
                 'size' => $file->getSize(),
             ];
-            if(!!$file->getThumbnails()){
+            if (!!$file->getThumbnails()) {
                 $tmp['thumbnails'] = $file->getThumbnails()[0]['small']['url'];
             }
             if ($tmp['folder']) {
                 $tmp['children'] = $file->getFolder()->getChildCount();
-                if($tmp['children'] && $flag) {
+                if ($tmp['children'] && $flag) {
                     $this->storeFile($tmp['id'], $flag);
                 }
             }
@@ -119,17 +116,11 @@ class GraphRequest
         Cache::forever($id, $data);
     }
 
-    public function getFileItems($id='root')
+    public function getFileItems($id = 'root')
     {
-        try {
-            $items = $this->graph->createCollectionRequest("GET", "/drives/me/items/{$id}/children?\$expand=thumbnails")
-                ->setReturnType(Model\DriveItem::class)
-                ->execute();
-        } catch (ClientException $e) {
-            $res = $e->getResponse()->getBody()->getContents();
-            var_dump($res);exit;
-        }
-        return $items;
+        return $this->graph->createCollectionRequest("GET", "/drives/me/items/{$id}/children?\$expand=thumbnails")
+            ->setReturnType(Model\DriveItem::class)
+            ->execute();
     }
 
     public function getFileContent($id)
@@ -175,44 +166,34 @@ class GraphRequest
             "name" => $name,
             "folder" => new StdClass(),
         ];
-        try {
-            $result = $this->graph->createRequest("POST", "/me/drive/items/{$id}/children")
-                ->attachBody($data)
-                ->setReturnType(Model\DriveItem::class)
-                ->execute();
+        $result = $this->graph->createRequest("POST", "/me/drive/items/{$id}/children")
+            ->attachBody($data)
+            ->setReturnType(Model\DriveItem::class)
+            ->execute();
 
-            $file = [
-                'id' => $result->getId(),
-                'pid' => $id,
-                'name' => $result->getName(),
-                'folder' => true,
-                'children' => 0,
-                'ctime' => $result->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
-                'mtime' => $result->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
-                'size' => $result->getSize(),
-            ];
-            $parent = Cache::get($id);
-            array_push($parent, $file);
-            Cache::forever($id, $parent);
+        $file = [
+            'id' => $result->getId(),
+            'pid' => $id,
+            'name' => $result->getName(),
+            'folder' => true,
+            'children' => 0,
+            'ctime' => $result->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
+            'mtime' => $result->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
+            'size' => $result->getSize(),
+        ];
+        $parent = Cache::get($id);
+        array_push($parent, $file);
+        Cache::forever($id, $parent);
 
-            $ret = ['code'=>201, 'msg'=>'创建文件夹成功'];
-        } catch (RequestException $e) {
-            report($e);
-            $code = $e->getCode();
-            preg_match('/\"message\": \"(.*?)\",/', $e->getMessage(), $match);
-            $message = $code===409 ? '文件夹重名，请修改后重试！' : $match[1];
-            $ret = ['code'=>$code, 'msg'=>$message];
-        } catch (GraphException $e) {
-            // Todo
-        }
-        return $ret;
+        return 201;
     }
 
-    private function deleteCache($item){
+    private function deleteCache($item)
+    {
         Cache::forget($item['id']);
         $parent = Cache::get($item['pid']);
-        foreach ($parent as $key => $val){
-            if($val['id'] === $item['id']) {
+        foreach ($parent as $key => $val) {
+            if ($val['id'] === $item['id']) {
                 unset($parent[$key]);
                 break;
             }
@@ -220,113 +201,72 @@ class GraphRequest
         Cache::forever($item['pid'], $parent);
     }
 
-    public function deleteItem($item){
-        try {
-            $status = $this->graph->createRequest("DELETE", "/me/drive/items/{$item['id']}")->execute()->getStatus();
-            $msg = '删除失败，请稍后重试！';
-            if($status === 204){
-                $msg = '删除文件或文件夹成功!';
-                $this->deleteCache($item);
-            }
-            $ret = ['code'=>$status, 'msg'=>$msg];
-        } catch (RequestException $e) {
-            report($e);
-            $code = $e->getCode();
-            $message = $e->getMessage();
-            $ret = ['code'=>$code, 'msg'=>$message];
-        } catch (GraphException $e) {
-            // Todo
-            report($e);
-            $code = $e->getCode();
-            $message = $e->getMessage();
-            $ret = ['code'=>$code, 'msg'=>$message];
-        }
-        if($ret['code'] === 404) {
-            $this->deleteCache($item);
-            $ret['msg'] = '文件或文件夹已删除，缓存更新成功！';
-        }
-        return $ret;
+    public function deleteItem($item)
+    {
+        $status = $this->graph->createRequest("DELETE", "/me/drive/items/{$item['id']}")
+            ->execute()
+            ->getStatus();
+        $this->deleteCache($item);
+        return $status;
     }
 
-    public function getUploadScript($id, $name, $size){
-        try {
-            return $this->graph->createRequest("POST", "/me/drive/items/{$id}:/{$name}:/createUploadSession")
-                ->addHeaders(["Content-Type" => "application/json"])
-                ->attachBody([
-                        "@microsoft.graph.conflictBehavior" => "rename",
-                        "description"    => 'File description here',
-                        "name"    => $name,
-                        "fileSize"    => $size,
-                        // "DeferCommit" => true
-                ])
-                ->setReturnType(Model\UploadSession::class)
-                ->execute()->getUploadUrl();
-        } catch (RequestException $e) {
-            report($e);
-            $code = $e->getCode();
-            $message = $e->getMessage();
-            $ret = ['code'=>$code, 'msg'=>$message];
-        } catch (GraphException $e) {
-
-        }
-        return $ret;
+    public function getUploadScript($id, $name, $size)
+    {
+        return $this->graph->createRequest("POST", "/me/drive/items/{$id}:/{$name}:/createUploadSession")
+            ->addHeaders(["Content-Type" => "application/json"])
+            ->attachBody([
+                "@microsoft.graph.conflictBehavior" => "rename",
+                "description" => 'File description here',
+                "name" => $name,
+                "fileSize" => $size,
+                // "DeferCommit" => true
+            ])
+            ->setReturnType(Model\UploadSession::class)
+            ->execute()->getUploadUrl();
     }
 
     //创建订阅
-    public function subscribe(){
-        try {
-            return $this->graph->createRequest("POST", "/subscriptions")
-                ->addHeaders(["Content-Type" => "application/json"])
-                ->attachBody([
-                    'changeType' => 'updated',
-                    'notificationUrl' => 'https://pan.9dutv.com/notify',
-                    'resource' => '/drives/me/root',
-                    'expirationDateTime' => '2020-12-30T18:23:45.9356913Z',
-                    "clientState" => "secretClientValue",
-                    "latestSupportedTlsVersion" => "v1_2"
-                ])
-                ->setReturnType(Model\Subscription::class)
-                ->execute();
-        } catch (GraphException $e) {
-        }
+    public function subscribe()
+    {
+        return $this->graph->createRequest("POST", "/subscriptions")
+            ->addHeaders(["Content-Type" => "application/json"])
+            ->setReturnType(Model\Subscription::class)
+            ->attachBody([
+                'changeType' => 'updated',
+                'notificationUrl' => 'https://pan.9dutv.com/notify',
+                'resource' => '/drives/me/root',
+                'expirationDateTime' => '2020-12-30T18:23:45.9356913Z',
+                "clientState" => "secretClientValue",
+                "latestSupportedTlsVersion" => "v1_2"
+            ])
+            ->execute();
     }
+
     //续订
-    public function resubscribe($id, $date){
-        try {
-            return $this->graph->createRequest("PATCH", "/subscriptions/{$id}")
-                ->setReturnType(Model\Subscription::class)
-                ->attachBody([
-                    'expirationDateTime' => $date,
-                ])
-                ->execute();
-        } catch (ClientException $e) {
-            $res = $e->getResponse()->getBody()->getContents();
-            $res = json_decode($res, true);
-            $message = $res['error']['message'];
-            return response($message, $e->getCode());
-        } catch (GraphException $e) {
-        }
+    public function resubscribe($id, $date)
+    {
+        return $this->graph->createRequest("PATCH", "/subscriptions/{$id}")
+            ->setReturnType(Model\Subscription::class)
+            ->attachBody([
+                'expirationDateTime' => $date,
+            ])
+            ->execute();
     }
 
     //获取订阅列表
-    public function getSubscriptions(){
-        try {
-            return $this->graph->createRequest("GET", "/subscriptions")
-                ->setReturnType(Model\Subscription::class)
-                ->execute();
-        } catch (GraphException $e) {
-
-        }
+    public function getSubscriptions()
+    {
+        return $this->graph->createRequest("GET", "/subscriptions")
+            ->setReturnType(Model\Subscription::class)
+            ->execute();
     }
 
     //获取订阅详情
-    public function getSubscriptionInfo($id){
-        try {
-            return $this->graph->createRequest("GET", "/subscriptions/{$id}")
-                ->setReturnType(Model\Subscription::class)
-                ->execute();
-        } catch (GraphException $e) {
-        }
+    public function getSubscriptionInfo($id)
+    {
+        return $this->graph->createRequest("GET", "/subscriptions/{$id}")
+            ->setReturnType(Model\Subscription::class)
+            ->execute();
     }
 
     public function sendMail()

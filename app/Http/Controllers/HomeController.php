@@ -37,7 +37,12 @@ class HomeController extends Controller
     public function test()
     {
         $graph = new GraphRequest;
-        $thumbnail = $graph->getFileThumbnail('01WQGIH6VLFYBWZQV22ZA3VKBX24TNJW6S');
+        // $thumbnail = $graph->getFileThumbnail('01WQGIH6VLFYBWZQV22ZA3VKBX24TNJW6S');
+        // $thumbnail = $graph->getFileContent('01WQGIH6RZHJE6C35LCJAI3PLNEVFPHRJX');
+        $thumbnail = $graph->deleteItem([
+            'id' => '01WQGIH6V4CBSZWZWENJE33BGX3OL46AEK',
+            'pid' => '01WQGIH6R6S72WUYBPS5G3TXGBLILA3GKP'
+        ]);
         var_dump($thumbnail);
 
         $id = 'root';

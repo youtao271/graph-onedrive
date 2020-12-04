@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('cors')->group(function () {
 
-    Route::get('/content/{id}', 'Api\IndexController@content');
+    Route::get('/content', 'Api\IndexController@content');
     Route::get('/', 'Api\IndexController@index');
     Route::post('/create', 'Api\IndexController@create');
     Route::post('/upload', 'Api\IndexController@upload');

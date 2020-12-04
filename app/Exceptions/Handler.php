@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Exception;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 
 class Handler extends ExceptionHandler
@@ -46,6 +47,18 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
+        if($exception instanceof RequestException){
+            $status = $exception->getCode();
+            $msg = $this->getMessage($exception);
+            return response($msg, $status);
+        }
         return parent::render($request, $exception);
+    }
+
+    private function getMessage($exception)
+    {
+        $res = $exception->getResponse()->getBody()->getContents();
+        $resArray = json_decode($res, true);
+        return $resArray['error']['message'];
     }
 }
