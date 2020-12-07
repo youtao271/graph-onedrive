@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Stream;
 use Microsoft\Graph\Graph;
+use Microsoft\Graph\Http\GraphResponse;
 use Microsoft\Graph\Model;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Tokens\GraphToken;
@@ -23,7 +24,7 @@ class GraphRequest
         $this->graph->setAccessToken($this->token);
     }
 
-    public function getToken()
+    public function getToken(): string
     {
         $accessToken = Cache::get('accessToken');
         return $accessToken->hasExpired() ?
@@ -31,13 +32,13 @@ class GraphRequest
             $accessToken->getToken();
     }
 
-    public function refreshToken($refreshToken)
+    public function refreshToken($refreshToken): string
     {
         $graphToken = new GraphToken;
         return $graphToken->refreshAccessToken($refreshToken);
     }
 
-    public function getUserInfo()
+    public function getUserInfo(): GraphResponse
     {
         $user = Cache::get('user');
         if (!$user) {
@@ -47,45 +48,6 @@ class GraphRequest
             Cache::forever('user', $user);
         }
         return $user;
-    }
-
-    public function getFiles()
-    {
-        $files = $this->graph->createCollectionRequest("GET", '/me/drive/root/children?$select=id,name,folder,fileSystemInfo,size')
-            ->setReturnType(Model\DriveItem::class)
-            ->execute();
-        if (empty($files)) return '';
-
-        $stack = ['/:/'];
-        $path = '/';
-        $data = [];
-        while ($key = array_shift($stack)) {
-            [$name, $id] = [...explode(':', $key), ''];
-            if ($name !== '/') $path .= $path === '/' ? $name : '/' . $name;
-            $files = $files ? $files : $this->getFileItems($id);
-            foreach ($files as $file) {
-                $tmp = [
-                    'id' => $file->getId(),
-                    'pid' => $id === '/' ? 0 : $id,
-                    'name' => $file->getName(),
-                    'folder' => $file->getFolder() ? $file->getFolder()->getChildCount() : 0,
-                    'ctime' => $file->getFileSystemInfo()->getCreatedDateTime()->format('Y-m-d H:i:s'),
-                    'mtime' => $file->getFileSystemInfo()->getLastModifiedDateTime()->format('Y-m-d H:i:s'),
-                    'size' => $file->getSize(),
-                ];
-                if ($file->getFolder()) {
-                    $tmp['folder'] = true;
-                    $tmp['children'] = $file->getFolder()->getChildCount();
-                }
-                $data[] = $tmp;
-                if ($tmp['folder']) array_push($stack, $tmp['name'] . ':' . $tmp['id']);
-            }
-            $files = null;
-        }
-
-        Cache::forever('/', $data);
-
-        return $data;
     }
 
     public function storeFile($id = 'root', $flag = false)
@@ -103,7 +65,7 @@ class GraphRequest
                 'size' => $file->getSize(),
             ];
             if (!!$file->getThumbnails()) {
-                $tmp['thumbnails'] = $file->getThumbnails()[0]['small']['url'];
+                $tmp['thumbnail'] = $file->getThumbnails()[0]['small']['url'];
             }
             if ($tmp['folder']) {
                 $tmp['children'] = $file->getFolder()->getChildCount();
@@ -116,7 +78,7 @@ class GraphRequest
         Cache::forever($id, $data);
     }
 
-    public function getFileItems($id = 'root')
+    public function getFileItems($id = 'root'): array
     {
         return $this->graph->createCollectionRequest("GET", "/drives/me/items/{$id}/children?\$expand=thumbnails")
             ->setReturnType(Model\DriveItem::class)
@@ -137,11 +99,6 @@ class GraphRequest
             ->execute();
     }
 
-    public function download($id)
-    {
-        return $this->graph->createRequest("GET", "/me/drive/items/{$id}/content")->execute();
-    }
-
     public function downloadFile($id)
     {
         $info = $this->graph->createRequest("GET", "/me/drive/items/{$id}/?\$select=@microsoft.graph.downloadUrl")
@@ -160,7 +117,7 @@ class GraphRequest
         return array_pop($file)['@microsoft.graph.downloadUrl'];
     }
 
-    public function createDirectory($id, $name)
+    public function createDirectory($id, $name): int
     {
         $data = [
             "name" => $name,
@@ -188,9 +145,9 @@ class GraphRequest
         return 201;
     }
 
-    private function deleteCache($item)
+    private function deleteCache($item, $move=false)
     {
-        Cache::forget($item['id']);
+        if(!$move)   Cache::forget($item['id']);
         $parent = Cache::get($item['pid']);
         foreach ($parent as $key => $val) {
             if ($val['id'] === $item['id']) {
@@ -201,7 +158,20 @@ class GraphRequest
         Cache::forever($item['pid'], $parent);
     }
 
-    public function deleteItem($item)
+    public function moveItem($pid, $item): int
+    {
+        $status = $this->graph->createRequest("PATCH", "/me/drive/items/{$item['id']}")
+            ->attachBody([
+                "parentReference" => ['id' => $pid],
+                "name" => $item['name']
+            ])
+            ->execute()
+            ->getStatus();
+        $this->deleteCache($item, true);
+        return $status;
+    }
+
+    public function deleteItem($item): int
     {
         $status = $this->graph->createRequest("DELETE", "/me/drive/items/{$item['id']}")
             ->execute()
@@ -226,7 +196,7 @@ class GraphRequest
     }
 
     //创建订阅
-    public function subscribe()
+    public function subscribe(): GraphResponse
     {
         return $this->graph->createRequest("POST", "/subscriptions")
             ->addHeaders(["Content-Type" => "application/json"])
@@ -243,7 +213,7 @@ class GraphRequest
     }
 
     //续订
-    public function resubscribe($id, $date)
+    public function resubscribe($id, $date): GraphResponse
     {
         return $this->graph->createRequest("PATCH", "/subscriptions/{$id}")
             ->setReturnType(Model\Subscription::class)
@@ -254,7 +224,7 @@ class GraphRequest
     }
 
     //获取订阅列表
-    public function getSubscriptions()
+    public function getSubscriptions(): array
     {
         return $this->graph->createRequest("GET", "/subscriptions")
             ->setReturnType(Model\Subscription::class)
@@ -262,7 +232,7 @@ class GraphRequest
     }
 
     //获取订阅详情
-    public function getSubscriptionInfo($id)
+    public function getSubscriptionInfo($id): GraphResponse
     {
         return $this->graph->createRequest("GET", "/subscriptions/{$id}")
             ->setReturnType(Model\Subscription::class)

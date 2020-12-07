@@ -17,7 +17,7 @@ class IndexController extends Controller
         return response($data);
     }
 
-    private function getItems($id)
+    private function getItems($id): array
     {
         $data = [];
         $files = Cache::get($id);
@@ -38,6 +38,18 @@ class IndexController extends Controller
         $graph->storeFile($id, $flag);
 
         return response($this->getItems('root'));
+    }
+
+    public function move(Request $request)
+    {
+        $pid = $request->input('id', 'root');
+        $data = $request->input('data');
+        $graph = new GraphRequest;
+        foreach ($data as $item) {
+            $graph->moveItem($pid, $item);
+        }
+
+        return response('移动文件或文件夹完成');
     }
 
     public function content(Request $request)
@@ -80,7 +92,7 @@ class IndexController extends Controller
             'data' => $this->getItems('root')
         ];
 
-        return response($data, $ret);
+        return response('创建文件夹成功', $ret);
     }
 
     public function delete(Request $request)

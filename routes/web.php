@@ -17,7 +17,6 @@ Route::get('/test', 'HomeController@test');
 Route::get('/download', 'HomeController@download');
 Route::match(['get', 'post'], '/update', 'HomeController@update');
 Route::get('/welcome', 'HomeController@welcome');
-Route::get('/refresh', 'HomeController@refresh');
 Route::get('/login', 'AuthController@login');
 Route::get('/callback', 'AuthController@callback');
 Route::get('/logout', 'AuthController@logout');

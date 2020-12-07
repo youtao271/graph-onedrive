@@ -24,6 +24,19 @@ class HomeController extends Controller
         echo 'Stored';
     }
 
+    public function updateThumbnails()
+    {
+        $data = $this->getItems();
+        if(!$data)  exit('无数据');
+        foreach ($data as $item) {
+            if(isset($item['thumbnail'])) {
+                $check = curl($item['thumbnail'], false, [], '', true);
+                if($check['error']) $this->update($item['pid']);
+            }
+        }
+        echo '更新缩略图完成';
+    }
+
     public function download(Request $request){
         $id = $request->input('id', '');
         if(!$id)    return false;
@@ -39,11 +52,16 @@ class HomeController extends Controller
         $graph = new GraphRequest;
         // $thumbnail = $graph->getFileThumbnail('01WQGIH6VLFYBWZQV22ZA3VKBX24TNJW6S');
         // $thumbnail = $graph->getFileContent('01WQGIH6RZHJE6C35LCJAI3PLNEVFPHRJX');
-        $thumbnail = $graph->deleteItem([
-            'id' => '01WQGIH6V4CBSZWZWENJE33BGX3OL46AEK',
-            'pid' => '01WQGIH6R6S72WUYBPS5G3TXGBLILA3GKP'
+        // $thumbnail = $graph->deleteItem([
+        //     'id' => '01WQGIH6V4CBSZWZWENJE33BGX3OL46AEK',
+        //     'pid' => '01WQGIH6R6S72WUYBPS5G3TXGBLILA3GKP'
+        // ]);
+        // var_dump($thumbnail);
+        $graph->moveItem('01WQGIH6R6S72WUYBPS5G3TXGBLILA3GKP', [
+            'id' => '01WQGIH6S4D3EW4NXQIVGLKQUUQLMMNESF',
+            'name' => 'wap.jpg',
+            'pid' => 'root'
         ]);
-        var_dump($thumbnail);
 
         $id = 'root';
         $data = $this->getItems($id);
@@ -54,7 +72,8 @@ class HomeController extends Controller
         // var_dump($graph->getSubscriptionInfo('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
     }
 
-    private function getItems($id){
+    private function getItems($id='root'): array
+    {
         $data = [];
         $files = Cache::get($id);
         foreach ($files as $file){
@@ -121,13 +140,6 @@ class HomeController extends Controller
     {
         var_dump(Cache::get('/'));
         exit;
-    }
-
-    public function refresh()
-    {
-        $graph = new GraphRequest;
-        $graph->getFiles();
-        echo 'Refresh OK';
     }
 }
 
