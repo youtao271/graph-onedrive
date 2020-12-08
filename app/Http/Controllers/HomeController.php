@@ -57,11 +57,11 @@ class HomeController extends Controller
         //     'pid' => '01WQGIH6R6S72WUYBPS5G3TXGBLILA3GKP'
         // ]);
         // var_dump($thumbnail);
-        $graph->moveItem('01WQGIH6R6S72WUYBPS5G3TXGBLILA3GKP', [
-            'id' => '01WQGIH6S4D3EW4NXQIVGLKQUUQLMMNESF',
-            'name' => 'wap.jpg',
-            'pid' => 'root'
-        ]);
+        // $graph->moveItem('01WQGIH6R6S72WUYBPS5G3TXGBLILA3GKP', [
+        //     'id' => '01WQGIH6S4D3EW4NXQIVGLKQUUQLMMNESF',
+        //     'name' => 'wap.jpg',
+        //     'pid' => 'root'
+        // ]);
 
         $id = 'root';
         $data = $this->getItems($id);

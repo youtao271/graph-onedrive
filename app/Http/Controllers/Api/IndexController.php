@@ -122,6 +122,17 @@ class IndexController extends Controller
         return response($ret);
     }
 
+    public function password(Request $request)
+    {
+        $id = $request->input('id', null);
+        $value = $request->input('value', null);
+        if(!$id || !$value) return response('参数错误', 400);
+
+        $ret = $this->getCodeContent($id);
+        if($ret === $value) return response($value);
+        return response('密码错误', 401);
+    }
+
     private function getFile($id, $pid)
     {
         $files = array_filter(Cache::get($pid), function ($item) use ($id) {
@@ -132,6 +143,7 @@ class IndexController extends Controller
 
     private function getFileType($name)
     {
+        if($name === '.password')   return 'pwd';
         $fileExt = pathinfo($name, PATHINFO_EXTENSION);
         $fileType = '';
         foreach (config('ext') as $key => $ext) {
@@ -145,7 +157,7 @@ class IndexController extends Controller
 
     private function getFileContent($id, $type)
     {
-        if ($type === 'code' || $type === 'md') {
+        if ($type === 'code' || $type === 'md' || $type === 'pwd') {
             $ret = $this->getCodeContent($id);
         } else {
             $ret = $this->getFileUrl($id);

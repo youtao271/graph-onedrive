@@ -30,6 +30,7 @@ Route::middleware('cors')->group(function () {
     Route::post('/move', 'Api\IndexController@move');
     Route::post('/download', 'Api\IndexController@download');
     Route::match(['get', 'post'], '/update', 'Api\IndexController@update');
+    Route::post('/password', 'Api\IndexController@password');
     Route::post('/delete', 'Api\IndexController@delete');
     Route::get('/{any}', 'Api\IndexController@index')->where('any', '.*');
 
