@@ -62,6 +62,8 @@ class HomeController extends Controller
         //     'name' => 'wap.jpg',
         //     'pid' => 'root'
         // ]);
+        $ret = $graph->getFileThumbnail('01WQGIH6WWLA5ZFHXFF5H2FXEX7PIAJKC7');
+        var_dump($ret);
 
         $id = 'root';
         $data = $this->getItems($id);

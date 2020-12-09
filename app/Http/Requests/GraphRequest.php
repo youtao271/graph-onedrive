@@ -65,7 +65,7 @@ class GraphRequest
                 'size' => $file->getSize(),
             ];
             if (!!$file->getThumbnails()) {
-                $tmp['thumbnail'] = $file->getThumbnails()[0]['small']['url'];
+                $tmp['thumbnail'] = $file->getThumbnails()[0]['large']['url'];
             }
             if ($tmp['folder']) {
                 $tmp['children'] = $file->getFolder()->getChildCount();
