@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\GraphRequest;
+use App\Http\Requests\QQMusicRequest;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -27,19 +29,20 @@ class HomeController extends Controller
     public function updateThumbnails()
     {
         $data = $this->getItems();
-        if(!$data)  exit('无数据');
+        if (!$data) exit('无数据');
         foreach ($data as $item) {
-            if(isset($item['thumbnail'])) {
+            if (isset($item['thumbnail'])) {
                 $check = curl($item['thumbnail'], false, [], '', true);
-                if($check['error']) $this->update($item['pid']);
+                if ($check['error']) $this->update($item['pid']);
             }
         }
         echo '更新缩略图完成';
     }
 
-    public function download(Request $request){
+    public function download(Request $request)
+    {
         $id = $request->input('id', '');
-        if(!$id)    return false;
+        if (!$id) return false;
 
         $graph = new GraphRequest();
         $url = $graph->getFileUrl($id);
@@ -49,6 +52,13 @@ class HomeController extends Controller
 
     public function test()
     {
+        $QQMusic = new QQMusicRequest();
+        $data = $QQMusic->getDissInfo(7178979179);
+        // $data = $QQMusic->getCategories();
+        // $data = $QQMusic->getMap();
+        // $data = $QQMusic->getCookie();
+        var_dump($data);exit;
+
         $graph = new GraphRequest;
         // $thumbnail = $graph->getFileThumbnail('01WQGIH6VLFYBWZQV22ZA3VKBX24TNJW6S');
         // $thumbnail = $graph->getFileContent('01WQGIH6RZHJE6C35LCJAI3PLNEVFPHRJX');
@@ -74,25 +84,26 @@ class HomeController extends Controller
         // var_dump($graph->getSubscriptionInfo('19837082-ea0c-42e2-9e7c-250c6c683c64'));exit;
     }
 
-    private function getItems($id='root'): array
+    private function getItems($id = 'root'): array
     {
         $data = [];
         $files = Cache::get($id);
-        foreach ($files as $file){
+        foreach ($files as $file) {
             array_push($data, $file);
-            if($file['folder'] && $file['children']) {
+            if ($file['folder'] && $file['children']) {
                 array_push($data, ...$this->getItems($file['id']));
             }
         }
         return $data;
     }
 
-    public function resubscribe(){
+    public function resubscribe()
+    {
         $date = date('c', strtotime('+ 30 day'));
         $graph = new GraphRequest;
         $subscriptions = $graph->getSubscriptions();
-        if(!$subscriptions) return false;
-        foreach ($subscriptions as $subscription){
+        if (!$subscriptions) return false;
+        foreach ($subscriptions as $subscription) {
             $id = $subscription->getId();
             $ret = $graph->resubscribe($id, $date);
             var_dump($id);
@@ -104,10 +115,10 @@ class HomeController extends Controller
 
     public function welcome($path = '/')
     {
-        if ($path === '/')   $this->root();
+        if ($path === '/') $this->root();
 
         // if ($path === 'api')
-            return redirect('/api/index');
+        return redirect('/api/index');
 
         $path = '/' . $path;
 
