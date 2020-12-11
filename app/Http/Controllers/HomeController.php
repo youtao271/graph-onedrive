@@ -50,13 +50,23 @@ class HomeController extends Controller
         return redirect()->away($url);
     }
 
+    public function cookie()
+    {
+        if(isset($_COOKIE['cookie'])){
+            return response($_COOKIE['cookie']);
+        }else{
+            return response('no-cookie');
+        }
+    }
+
     public function test()
     {
         $QQMusic = new QQMusicRequest();
-        $data = $QQMusic->getDissInfo(7178979179);
+        // $data = $QQMusic->getDissInfo(7178979179);
         // $data = $QQMusic->getCategories();
-        // $data = $QQMusic->getMap();
+        $data = $QQMusic->getSongUrl('0005UUIy4G0CTo');
         // $data = $QQMusic->getCookie();
+        // $data = $QQMusic->getSongUrl('0005UUIy4G0CTo');
         var_dump($data);exit;
 
         $graph = new GraphRequest;

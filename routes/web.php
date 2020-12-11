@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/test', 'HomeController@test');
+Route::get('/cookie', 'HomeController@cookie');
 Route::get('/download', 'HomeController@download');
 Route::match(['get', 'post'], '/update', 'HomeController@update');
 Route::get('/welcome', 'HomeController@welcome');

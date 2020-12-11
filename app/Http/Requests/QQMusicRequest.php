@@ -20,11 +20,7 @@ class QQMusicRequest
             'base_uri' => 'https://c.y.qq.com',
             'headers' => [
                 'Referer' => 'https://y.qq.com/'
-            ],
-            'query' => [
-                'format' => 'json'
-            ],
-            'cookies' => true
+            ]
         ]);
     }
 
@@ -77,10 +73,34 @@ class QQMusicRequest
         return $this->getContents();
     }
 
-    public function getMap($id)
+    private function freshCookie()
+    {
+        $this->result = $this->client->request('GET', 'https://api.qq.jsososo.com/user/cookie', [
+            'headers' => [
+                'Host' => 'api.qq.jsososo.com',
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
+            ]
+        ]);
+        $cookie = $this->getContents()['data']['userCookie'];
+        Cache::forever('QQMusic_cookie', $cookie);
+        return $cookie;
+    }
+
+    private function getCookie(): CookieJar
+    {
+        $cookie = Cache::get('QQMusic_cookie');
+        if(!$cookie)    $cookie = $this->freshCookie();
+        return CookieJar::fromArray($cookie, 'qq.com');
+    }
+
+    public function getSongUrl($ids, $type=''): string
     {
         $url = 'https://u.y.qq.com/cgi-bin/musicu.fcg';
+
+        $cookieJar = $this->getCookie();
+        $filename = $this->getFilename($ids, $type);
         $this->result = $this->client->request('GET', $url, [
+            'cookies' => $cookieJar,
             'query' => [
                 '-' => 'getplaysongvkey',
                 'g_tk' => 5381,
@@ -88,47 +108,72 @@ class QQMusicRequest
                 'inCharset' => 'utf8',
                 'outCharset' => 'utf-8',
                 'platform' => 'yqq.json',
-                'data' => [
+                'data' => json_encode([
+                    "req" => [
+                        "module" => "CDN.SrfCdnDispatchServer",
+                        "method" => "GetCdnDispatch",
+                        "param" => [
+                            "guid" => "6351115598",
+                            "calltype" => 0,
+                            "userip" => ""
+                        ]
+                    ],
                     'req_0' => [
                         "module" => "vkey.GetVkeyServer",
                         "method" => "CgiGetVkey",
                         "param" => [
-                            "filename" => [file],
-                            "guid" => mt_rand(),
-                            "songmid" => $id,
-                            "songtype" => 0,
-                            "uin" => 1234567,
+                            "filename" => [$filename],
+                            "guid" => '12345678',
+                            "songmid" => [$ids],
+                            "songtype" => [0],
+                            "uin" => '956581739',
                             "loginflag" => 1,
                             "platform" => "20",
                         ]
                     ],
                     'comm' => [
-                        "uin" => 1234567,
+                        "uin" => '956581739',
                         "format" => "json",
-                        "ct" => 19,
+                        "ct" => 24,
                         "cv" => 0
                     ]
-                ]
+                ])
             ]
         ]);
-        return $this->getContents();
+        $data = $this->getContents();
+        $purl = $data['req_0']['data']['midurlinfo'][0]['purl'];
+        $sip = $data['req_0']['data']['sip'][1];
+        return $sip . $purl;
     }
 
-    public function getCookie()
+    private function getFilename($id, $type = '128', $mid = ''): string
     {
-        // $this->result = $this->client->request('GET', 'https://y.qq.com');
-        $jar = new CookieJar();
-        $this->result = $this->client->request('GET', 'https://www.baidu.com', ['cookies'=>$jar]);
-        // $it = $jar->getIterator();
-        // while ($it->valid()) {
-        //     var_dump(111);
-        //     var_dump($it->current());
-        //     $it->next();
-        // }
-        $cookie = $jar->toArray();
-        var_dump($cookie);
-        var_dump($this->getContents());
-        exit;
+        $type = $type ?: '128';
+        $mid = $mid ?: $id;
+        $typeArr = [
+            'm4a' => [
+                's' => 'C400',
+                'e' => '.m4a',
+
+            ],
+            '128' => [
+                's' => 'M500',
+                'e' => '.mp3',
+            ],
+            '320' => [
+                's' => 'M800',
+                'e' => '.mp3',
+            ],
+            'ape' => [
+                's' => 'A000',
+                'e' => '.ape',
+            ],
+            'flac' => [
+                's' => 'F000',
+                'e' => '.flac',
+            ]
+        ];
+        return $typeArr[$type]['s'] . $id . $mid . $typeArr[$type]['e'];
     }
 
     private function getContents()
