@@ -23,15 +23,24 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('cors')->group(function () {
 
-    Route::get('/content', 'Api\IndexController@content');
-    Route::get('/', 'Api\IndexController@index');
-    Route::post('/create', 'Api\IndexController@create');
-    Route::post('/upload', 'Api\IndexController@upload');
-    Route::post('/move', 'Api\IndexController@move');
-    Route::post('/download', 'Api\IndexController@download');
-    Route::match(['get', 'post'], '/update', 'Api\IndexController@update');
-    Route::post('/password', 'Api\IndexController@password');
-    Route::post('/delete', 'Api\IndexController@delete');
+    Route::prefix('disc')->group(function () {
+        Route::get('/content', 'Api\IndexController@content');
+        Route::get('/', 'Api\IndexController@index');
+        Route::post('/create', 'Api\IndexController@create');
+        Route::post('/upload', 'Api\IndexController@upload');
+        Route::post('/move', 'Api\IndexController@move');
+        Route::post('/download', 'Api\IndexController@download');
+        Route::match(['get', 'post'], '/update', 'Api\IndexController@update');
+        Route::post('/password', 'Api\IndexController@password');
+        Route::post('/delete', 'Api\IndexController@delete');
+    });
+
+    Route::prefix('diss')->group(function () {
+        Route::get('/list', 'Api\QQMusicController@list');
+        Route::get('/info', 'Api\QQMusicController@info');
+    });
+
+
     Route::get('/{any}', 'Api\IndexController@index')->where('any', '.*');
 
 });

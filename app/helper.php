@@ -31,3 +31,11 @@ if (!function_exists('curl')) {
 
     }
 }
+
+function apiResponse($data, $msg='操作成功', $error=0) {
+    return response([
+        'error' => $error,
+        'data' => $data,
+        'msg' => $msg
+    ]);
+}

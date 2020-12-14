@@ -24,7 +24,7 @@ class QQMusicRequest
         ]);
     }
 
-    public function getDissList($page = 1, $pagesize = 20, $sortid = 5, $category = 10000000, $raw = false)
+    public function getDissList($page = 1, $pagesize = 20, $sortid = 5, $category = 10000000, $raw = false): array
     {
         $url = '/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg';
         $sin = $pagesize * ($page - 1);
@@ -41,11 +41,11 @@ class QQMusicRequest
             ]
         ]);
         $data = $this->getContents();
-        $data = $data['data']['list'];
+        return $data['data']['list'];
 
     }
 
-    public function getDissInfo($id)
+    public function getDissInfo($id): array
     {
         $url = '/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg';
         $this->result = $this->client->request('GET', $url, [
@@ -57,10 +57,11 @@ class QQMusicRequest
                 'format' => 'json'
             ]
         ]);
-        return $this->getContents();
+        $data = $this->getContents();
+        return $data['cdlist'][0];
     }
 
-    public function getCategories()
+    public function getCategories(): array
     {
         $url = '/splcloud/fcgi-bin/fcg_get_diss_tag_conf.fcg';
         $this->result = $this->client->request('GET', $url, [
@@ -70,10 +71,32 @@ class QQMusicRequest
                 'format' => 'json'
             ]
         ]);
-        return $this->getContents();
+        $data = $this->getContents();
+        return $data['data']['categories'];
     }
 
-    private function freshCookie()
+    public function getLyric($id): string
+    {
+        $url = '/lyric/fcgi-bin/fcg_query_lyric_new.fcg';
+        $this->result = $this->client->request('GET', $url, [
+            'query' => [
+                'songmid' => $id,
+                'pcachetime' => time()*1000,
+                'g_tk' => 5381,
+                'loginUin' => '0',
+                'hostUin' => 0,
+                'inCharset' => 'utf8',
+                'outCharset' => 'utf-8',
+                'notice' => 0,
+                'platform' => 'yqq',
+                'needNewCode' => 0,
+            ]
+        ]);
+        $data = $this->getContents();
+        return base64_decode($data['lyric']);
+    }
+
+    private function freshCookie(): string
     {
         $this->result = $this->client->request('GET', 'https://api.qq.jsososo.com/user/cookie', [
             'headers' => [
@@ -89,11 +112,12 @@ class QQMusicRequest
     private function getCookie(): CookieJar
     {
         $cookie = Cache::get('QQMusic_cookie');
-        if(!$cookie)    $cookie = $this->freshCookie();
+        // $cookie = [];
+        if (!$cookie) $cookie = $this->freshCookie();
         return CookieJar::fromArray($cookie, 'qq.com');
     }
 
-    public function getSongUrl($ids, $type=''): string
+    public function getSongUrl($ids, $type = ''): string
     {
         $url = 'https://u.y.qq.com/cgi-bin/musicu.fcg';
 
@@ -176,12 +200,11 @@ class QQMusicRequest
         return $typeArr[$type]['s'] . $id . $mid . $typeArr[$type]['e'];
     }
 
-    private function getContents()
+    private function getContents(): array
     {
-        // var_dump($this->result);
-        // $data = $this->result->getBody()->getContents();
-        // $data = preg_replace('/callback\(|MusicJsonCallback\(|jsonCallback\(|\)$/i', '', $data);
-        return json_decode($this->result->getBody()->getContents(), true);
+        $data = $this->result->getBody()->getContents();
+        $data = preg_replace('/callback\(|MusicJsonCallback\(|jsonCallback\(|\)$/i', '', $data);
+        return json_decode($data, true);
     }
 
 }
