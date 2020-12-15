@@ -35,9 +35,10 @@ Route::middleware('cors')->group(function () {
         Route::post('/delete', 'Api\IndexController@delete');
     });
 
-    Route::prefix('diss')->group(function () {
-        Route::get('/list', 'Api\QQMusicController@list');
-        Route::get('/info', 'Api\QQMusicController@info');
+    Route::prefix('qqm')->group(function () {
+        Route::get('/disslist', 'Api\QQMusicController@disslist');
+        Route::get('/dissinfo', 'Api\QQMusicController@dissinfo');
+        Route::get('/song', 'Api\QQMusicController@song');
     });
 
 

@@ -96,7 +96,7 @@ class QQMusicRequest
         return base64_decode($data['lyric']);
     }
 
-    private function freshCookie(): string
+    private function freshCookie(): array
     {
         $this->result = $this->client->request('GET', 'https://api.qq.jsososo.com/user/cookie', [
             'headers' => [
@@ -105,7 +105,7 @@ class QQMusicRequest
             ]
         ]);
         $cookie = $this->getContents()['data']['userCookie'];
-        Cache::forever('QQMusic_cookie', $cookie);
+        Cache::put('QQMusic_cookie', $cookie, 12*60*60);
         return $cookie;
     }
 
@@ -117,12 +117,12 @@ class QQMusicRequest
         return CookieJar::fromArray($cookie, 'qq.com');
     }
 
-    public function getSongUrl($ids, $type = ''): string
+    public function getSongUrl($ids, $mid, $type = ''): string
     {
         $url = 'https://u.y.qq.com/cgi-bin/musicu.fcg';
 
         $cookieJar = $this->getCookie();
-        $filename = $this->getFilename($ids, $type);
+        $filename = $this->getFilename($ids, $type, $mid);
         $this->result = $this->client->request('GET', $url, [
             'cookies' => $cookieJar,
             'query' => [

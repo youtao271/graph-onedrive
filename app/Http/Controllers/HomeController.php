@@ -64,9 +64,8 @@ class HomeController extends Controller
         $QQMusic = new QQMusicRequest();
         // $data = $QQMusic->getDissList();
         // $data = $QQMusic->getDissInfo(6946005790);
-        $data = $QQMusic->getCategories();
-        // $data = $QQMusic->getSongUrl('0005UUIy4G0CTo');
-        // $data = $QQMusic->getSongUrl('0005UUIy4G0CTo');
+        // $data = $QQMusic->getCategories();
+        $data = $QQMusic->getSongUrl('0005UUIy4G0CTo', '');
         // $data = $QQMusic->getLyric('0005UUIy4G0CTo');
         var_dump($data);exit;
 

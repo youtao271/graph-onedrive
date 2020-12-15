@@ -16,15 +16,24 @@ class QQMusicController extends Controller
         $this->QQMusic = new QQMusicRequest();
     }
 
-    public function list()
+    public function disslist()
     {
         return apiResponse($this->QQMusic->getDissList());
     }
 
-    public function info(Request $request)
+    public function dissinfo(Request $request)
     {
         $id = $request->input('id');
         return apiResponse($this->QQMusic->getDissInfo($id));
+    }
+
+    public function song(Request $request)
+    {
+        $id = $request->input('id');
+        $mid = $request->input('mid', '');
+        $type = $request->input('type', '128');
+        $url = $this->QQMusic->getSongUrl($id, $mid, $type);
+        return apiResponse($url);
     }
 
 }
