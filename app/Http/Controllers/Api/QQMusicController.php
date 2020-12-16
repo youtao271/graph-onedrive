@@ -32,8 +32,26 @@ class QQMusicController extends Controller
         $id = $request->input('id');
         $mid = $request->input('mid', '');
         $type = $request->input('type', '128');
-        $url = $this->QQMusic->getSongUrl($id, $mid, $type);
+        $url = $this->getUrl($id, $mid, $type);
         return apiResponse($url);
+    }
+
+    public function audio(Request $request): string
+    {
+        $url = $request->input('url');
+        if(!$url) {
+            $id = $request->input('id');
+            $mid = $request->input('mid', '');
+            $type = $request->input('type', '128');
+            $url = $this->getUrl($id, $mid, $type);
+        }
+        // var_dump($audio);exit;
+        return $this->QQMusic->getAudioBuffer($url);
+    }
+
+    private function getUrl($id, $mid, $type): string
+    {
+        return $this->QQMusic->getSongUrl($id, $mid, $type);
     }
 
 }

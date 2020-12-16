@@ -39,6 +39,7 @@ Route::middleware('cors')->group(function () {
         Route::get('/disslist', 'Api\QQMusicController@disslist');
         Route::get('/dissinfo', 'Api\QQMusicController@dissinfo');
         Route::get('/song', 'Api\QQMusicController@song');
+        Route::get('/audio', 'Api\QQMusicController@audio');
     });
 
 

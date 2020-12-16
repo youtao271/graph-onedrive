@@ -105,7 +105,7 @@ class QQMusicRequest
             ]
         ]);
         $cookie = $this->getContents()['data']['userCookie'];
-        Cache::put('QQMusic_cookie', $cookie, 12*60*60);
+        Cache::put('QQMusic_cookie', $cookie, 6*60*60);
         return $cookie;
     }
 
@@ -168,6 +168,12 @@ class QQMusicRequest
         $purl = $data['req_0']['data']['midurlinfo'][0]['purl'];
         $sip = $data['req_0']['data']['sip'][1];
         return $sip . $purl;
+    }
+
+    public function getAudioBuffer($url)
+    {
+        $this->result = $this->client->get($url);
+        return $this->result->getBody()->getContents();
     }
 
     private function getFilename($id, $type = '128', $mid = ''): string
